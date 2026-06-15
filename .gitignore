@@ -17,3 +17,5 @@ desktop.ini
 # logs / temp
 *.log
 _analysis/
+
+.vercel
