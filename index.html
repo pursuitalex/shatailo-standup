@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Єгор Шатайло — Стендап. Сольник «Космічний А#уй»</title>
+  <meta name="description" content="Чотири всеукраїнські сольники за бабки. Дивись трейлери, купуй повні концерти. Матюччя присутнє.">
+  <meta property="og:title" content="Єгор Шатайло — Стендап">
+  <meta property="og:description" content="Новий сольник «Космічний А#уй» — 76 хвилин космічних приколів.">
+  <meta property="og:image" content="assets/egor-hero.jpg">
+
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+
+  <!-- ПРЕЛОАДЕР -->
+  <div class="preloader" id="preloader">
+    <div class="preloader__inner">
+      <div class="preloader__word" aria-hidden="true">ШАТАЙЛО</div>
+      <div class="preloader__counter"><span id="preloaderCount">0</span>%</div>
+      <div class="preloader__bar"><span id="preloaderBar"></span></div>
+    </div>
+  </div>
+
+  <!-- ШУМ / КУРСОР / ПРОГРЕС -->
+  <div class="noise" aria-hidden="true"></div>
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+  <!-- ХЕДЕР -->
+  <header class="header" id="header">
+    <a href="#hero" class="header__logo" data-hover aria-label="Єгор Шатайло — на початок">
+      <span class="logo-text">Єгор Шатайло</span>
+    </a>
+    <nav class="header__nav" aria-label="Навігація">
+      <a href="#solnyky" data-hover>Сольники</a>
+      <a href="#about" data-hover>Про Єгора</a>
+      <a href="#tour" data-hover>Тур</a>
+      <a href="#merch" data-hover>Мерч</a>
+    </nav>
+    <a href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/" target="_blank" rel="noopener" class="btn btn--solid header__cta" data-hover data-magnetic>
+      Придбати сольник
+    </a>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" id="hero">
+      <canvas class="hero__canvas" id="scene" aria-hidden="true"></canvas>
+      <div class="hero__vignette" aria-hidden="true"></div>
+
+      <div class="hero__content">
+        <p class="hero__label" id="heroLabel">Купуйте новий сольник — 2026</p>
+        <h1 class="hero__title" id="heroTitle">
+          <span class="hero__line"><span class="split">КОСМІЧНИЙ</span></span>
+          <span class="hero__line hero__line--accent"><span class="split">А#УЙ</span></span>
+        </h1>
+        <p class="hero__meta" id="heroMeta">
+          Четвертий всеукраїнський сольник за бабки
+          <span class="dot">·</span> 76 хв
+          <span class="dot">·</span> матюччя присутнє
+        </p>
+        <div class="hero__actions" id="heroActions">
+          <button class="btn btn--solid" data-hover data-magnetic
+                  data-trailer="v2ySJscUFtU"
+                  data-trailer-title="Космічний А#уй — фрагмент">
+            <span class="btn__icon">▶</span> Дивитись фрагмент
+          </button>
+          <a href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/" target="_blank" rel="noopener" class="btn btn--ghost" data-hover data-magnetic>
+            Придбати — 500 ₴
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__scrollhint" id="scrollHint" aria-hidden="true">
+        <span>скрол</span>
+        <i></i>
+      </div>
+
+      <div class="marquee marquee--hero" aria-hidden="true">
+        <div class="marquee__track" data-marquee data-speed="28">
+          <span>ХАЙ ЖИВЕ СТЕНДАП&ensp;✦&ensp;<i class="marquee__hl">КОСМІЧНИЙ А#УЙ</i>&ensp;✦&ensp;НОВИЙ СОЛЬНИК&ensp;✦&ensp;<i class="marquee__hl">76 ХВИЛИН</i>&ensp;✦&ensp;</span>
+          <span>ХАЙ ЖИВЕ СТЕНДАП&ensp;✦&ensp;<i class="marquee__hl">КОСМІЧНИЙ А#УЙ</i>&ensp;✦&ensp;НОВИЙ СОЛЬНИК&ensp;✦&ensp;<i class="marquee__hl">76 ХВИЛИН</i>&ensp;✦&ensp;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- СОЛЬНИКИ -->
+    <section class="specials" id="solnyky">
+      <div class="specials__head container">
+        <p class="section-index reveal">01 — Сольники</p>
+        <h2 class="section-title">
+          <span class="reveal-line"><span>ЧОТИРИ СОЛЬНИКИ</span></span>
+          <span class="reveal-line"><span class="outline">ЗА БАБКИ</span></span>
+        </h2>
+        <p class="specials__intro reveal">
+          Купуєш — дивишся на shatailo.com необмежено, з моменту придбання і до теплової смерті всесвіту.
+          Матюччя присутнє в кожному.
+        </p>
+      </div>
+
+      <div class="specials__pin" id="specialsPin">
+        <div class="specials__track" id="specialsTrack">
+
+          <article class="card" data-tilt>
+            <div class="card__poster">
+              <img src="assets/poster-kosmichnyi.jpg" alt="Постер сольника «Космічний А#уй»" loading="lazy">
+              <span class="card__num">01</span>
+              <span class="card__badge">НОВИЙ</span>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Космічний А#уй</h3>
+              <p class="card__meta">2026 <span class="dot">·</span> 76 хв <span class="dot">·</span> четвертий сольник</p>
+              <p class="card__desc">
+                Про вітчизняну пропаганду, новинну дихотомію, наступну мить,
+                двері божевілля спортсменів та первородний гріх українців.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--ghost btn--sm" data-hover
+                        data-trailer="v2ySJscUFtU"
+                        data-trailer-title="Космічний А#уй — фрагмент">▶ Фрагмент</button>
+                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
+                   href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/">Придбати — 500 ₴</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="card" data-tilt>
+            <div class="card__poster">
+              <img src="assets/poster-povitryane.png" alt="Постер сольника «Повітряне Зашибісь»" loading="lazy">
+              <span class="card__num">02</span>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Повітряне Зашибісь</h3>
+              <p class="card__meta">2024 <span class="dot">·</span> 70 хв <span class="dot">·</span> третій сольник</p>
+              <p class="card__desc">
+                Про відносини, супер зброю США, країни західного блоку, спокій,
+                євробачення та неймовірний кайф від радості бути українцем.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--ghost btn--sm" data-hover
+                        data-trailer="lYx-0zywj8E"
+                        data-trailer-title="Повітряне Зашибісь — фрагмент">▶ Фрагмент</button>
+                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
+                   href="https://shatailo.com/shop/video/solnyk-povitryane-zashybis/">Придбати — 400 ₴</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="card" data-tilt>
+            <div class="card__poster">
+              <img src="assets/poster-sekunda.jpg" alt="Постер сольника «Секунда Бабака»" loading="lazy">
+              <span class="card__num">03</span>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Секунда Бабака</h3>
+              <p class="card__meta">2023 <span class="dot">·</span> 83 хв <span class="dot">·</span> другий сольник</p>
+              <p class="card__desc">
+                Про божевілля, попайку, транквілізатори, повітряні тривоги, політичних
+                експертів та часово-просторовий парадокс життя під час вторгнення.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--ghost btn--sm" data-hover
+                        data-trailer="j3hv67-ptXg"
+                        data-trailer-title="Секунда Бабака — фрагмент">▶ Фрагмент</button>
+                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
+                   href="https://shatailo.com/shop/video/sekynda-babaka/">Придбати — 300 ₴</a>
+              </div>
+            </div>
+          </article>
+
+          <article class="card" data-tilt>
+            <div class="card__poster">
+              <img src="assets/poster-tymchasovi.jpg" alt="Постер сольника «Тимчасові незручності»" loading="lazy">
+              <span class="card__num">04</span>
+            </div>
+            <div class="card__body">
+              <h3 class="card__title">Тимчасові незручності</h3>
+              <p class="card__meta">2021 <span class="dot">·</span> 67 хв <span class="dot">·</span> перший сольник</p>
+              <p class="card__desc">
+                Зроблено за сто років до повномасштабного вторгнення.
+                Розйобність приколів від цього не постраждала.
+              </p>
+              <div class="card__actions">
+                <button class="btn btn--ghost btn--sm" data-hover
+                        data-trailer="G8nOmNe1TBs"
+                        data-trailer-title="Тимчасові незручності — уривок про селеб">▶ Фрагмент</button>
+                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
+                   href="https://shatailo.com/shop/video/album/">Придбати — 250 ₴</a>
+              </div>
+            </div>
+          </article>
+
+        </div>
+        <div class="specials__progress" aria-hidden="true"><span id="specialsProgress"></span></div>
+      </div>
+    </section>
+
+    <!-- ПРО ЄГОРА -->
+    <section class="about" id="about">
+      <div class="about__bgtext" id="aboutBgText" aria-hidden="true">ШАТАЙЛО&ensp;ШАТАЙЛО&ensp;ШАТАЙЛО</div>
+      <div class="container about__grid">
+        <div class="about__photo" id="aboutPhoto">
+          <img src="assets/egor-hero.jpg" alt="Єгор Шатайло на сцені з мікрофоном">
+          <span class="about__photo-frame" aria-hidden="true"></span>
+        </div>
+        <div class="about__text">
+          <p class="section-index reveal">02 — Про Єгора</p>
+          <h2 class="section-title">
+            <span class="reveal-line"><span>ЛЮДИНА-</span></span>
+            <span class="reveal-line"><span class="outline">УКРАЇНЕЦЬ</span></span>
+          </h2>
+          <p class="about__bio reveal">
+            Єгор Шатайло — київський стендап-комік, резидент «Підпільного стендапу».
+            Еталонний абсурд, моноспектаклі замість сетів і чотири всеукраїнські
+            сольники за бабки. Якщо вам здалося, що це було смішно — вам не здалося.
+          </p>
+          <ul class="about__stats">
+            <li class="reveal"><b data-count="4">0</b><span>сольники</span></li>
+            <li class="reveal"><b data-count="296">0</b><span>хвилин приколів</span></li>
+            <li class="reveal"><b data-count="100">0</b><span>% матюччя</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ТУР -->
+    <section class="tour" id="tour">
+      <div class="container">
+        <p class="section-index reveal">03 — Стендап-тур</p>
+        <h2 class="section-title">
+          <span class="reveal-line"><span>ЖИВІ</span></span>
+          <span class="reveal-line"><span class="outline">ВИСТУПИ</span></span>
+        </h2>
+
+        <ul class="tour__list">
+          <li class="tour__row reveal" data-soldout>
+            <span class="tour__date">23 листопада 2022</span>
+            <span class="tour__city">м. Львів</span>
+            <span class="tour__stamp" aria-label="Солд аут">СОЛД АУТ</span>
+          </li>
+          <li class="tour__row tour__row--empty reveal">
+            <span class="tour__quote">«поки нема, але буде. слідкуйте за анонсами. дякую»</span>
+          </li>
+        </ul>
+
+        <div class="tour__actions reveal">
+          <a class="btn btn--solid" data-hover data-magnetic target="_blank" rel="noopener"
+             href="https://www.instagram.com/egorshatailo/">Анонси в Instagram</a>
+          <a class="btn btn--ghost" data-hover data-magnetic target="_blank" rel="noopener"
+             href="https://shatailo.com/%d1%81%d1%82%d0%b5%d0%bd%d0%b4%d0%b0%d0%bf-%d1%82%d1%83%d1%80/">Повний список</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- МЕРЧ -->
+    <section class="merch" id="merch">
+      <a class="merch__link" data-hover target="_blank" rel="noopener" href="https://shatailo.com/" aria-label="Мерч на shatailo.com">
+        <div class="marquee marquee--merch" aria-hidden="true">
+          <div class="marquee__track" data-marquee data-speed="20">
+            <span>МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;</span>
+            <span>МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;МЕРЧ&ensp;✦&ensp;</span>
+          </div>
+        </div>
+        <p class="merch__hint reveal">Носи матюччя красиво → до магазину</p>
+      </a>
+    </section>
+  </main>
+
+  <!-- ФУТЕР -->
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div class="footer__brand">
+        <span class="logo-text logo-text--lg">Єгор Шатайло</span>
+        <p>Стендап. Сольники. Матюччя.</p>
+      </div>
+      <nav class="footer__col" aria-label="Соцмережі">
+        <h4>Соцмережі</h4>
+        <a href="https://www.instagram.com/egorshatailo/" target="_blank" rel="noopener" data-hover>Instagram</a>
+        <a href="https://twitter.com/shatailer" target="_blank" rel="noopener" data-hover>Twitter</a>
+        <a href="https://www.youtube.com/results?search_query=%D1%94%D0%B3%D0%BE%D1%80+%D1%88%D0%B0%D1%82%D0%B0%D0%B9%D0%BB%D0%BE" target="_blank" rel="noopener" data-hover>YouTube</a>
+      </nav>
+      <nav class="footer__col" aria-label="Документи">
+        <h4>Документи</h4>
+        <a href="https://shatailo.com/dogovir-oferty/" target="_blank" rel="noopener" data-hover>Договір оферти</a>
+        <a href="https://shatailo.com/privacy-policy/" target="_blank" rel="noopener" data-hover>Політика конфіденційності</a>
+        <a href="https://shatailo.com/contact/" target="_blank" rel="noopener" data-hover>Контакти</a>
+      </nav>
+    </div>
+    <div class="container footer__bottom">
+      <p>© 2026 Єгор Шатайло. Концепт-редизайн — весь контент і відео належать <a href="https://shatailo.com/" target="_blank" rel="noopener" data-hover>shatailo.com</a></p>
+    </div>
+  </footer>
+
+  <!-- МОДАЛКА ТРЕЙЛЕРА -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__backdrop" id="modalBackdrop"></div>
+    <div class="modal__panel">
+      <header class="modal__head">
+        <h3 id="modalTitle">Фрагмент</h3>
+        <button class="modal__close" id="modalClose" data-hover aria-label="Закрити">✕</button>
+      </header>
+      <div class="modal__video">
+        <iframe id="modalFrame" src="" title="Фрагмент виступу"
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+      </div>
+      <footer class="modal__foot">
+        <p>Це фрагмент виступу. Повний сольник — після покупки на shatailo.com</p>
+        <a class="btn btn--solid btn--sm" id="modalBuy" data-hover target="_blank" rel="noopener"
+           href="https://shatailo.com/">Придбати повний</a>
+      </footer>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

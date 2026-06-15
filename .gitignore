@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# editor / tooling
+.claude/
+.vscode/
+.idea/
+
+# vercel
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs / temp
+*.log
+_analysis/
