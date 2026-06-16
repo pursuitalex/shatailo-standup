@@ -212,6 +212,34 @@ document.querySelectorAll(".reveal").forEach((el) => {
   });
 });
 
+/* ---------- великий екран: розкриття маскою + паралакс-зум ---------- */
+const featureMedia = document.getElementById("featureMedia");
+if (featureMedia && !prefersReduced) {
+  const featureImg = featureMedia.querySelector("img");
+  // розкриття маскою (clip-path знизу вгору) при вході в кадр
+  gsap.fromTo(
+    featureMedia,
+    { clipPath: "inset(100% 0% 0% 0%)" },
+    {
+      clipPath: "inset(0% 0% 0% 0%)",
+      duration: 1.5,
+      ease: "power4.out",
+      scrollTrigger: { trigger: "#feature", start: "top 80%" },
+    }
+  );
+  // паралакс-зум зображення на скрол
+  gsap.fromTo(
+    featureImg,
+    { scale: 1.18, yPercent: -3 },
+    {
+      scale: 1,
+      yPercent: 3,
+      ease: "none",
+      scrollTrigger: { trigger: "#feature", start: "top bottom", end: "bottom top", scrub: 0.5 },
+    }
+  );
+}
+
 /* ---------- сольники: горизонтальний пін (десктоп) ---------- */
 const track = document.getElementById("specialsTrack");
 const pin = document.getElementById("specialsPin");
@@ -230,6 +258,9 @@ mm.add("(min-width: 900px) and (prefers-reduced-motion: no-preference)", () => {
       scrub: 0.6,
       invalidateOnRefresh: true,
       anticipatePin: 1,
+      // пін зсуває позиції секцій нижче (about, tour) — рахуємо його ПЕРШИМ,
+      // щоб reveal-и тих секцій отримали коректний старт і анімувались у кадрі
+      refreshPriority: 1,
       onUpdate: (self) => {
         document.getElementById("specialsProgress").style.transform =
           `scaleX(${self.progress})`;

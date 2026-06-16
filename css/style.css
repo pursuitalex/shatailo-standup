@@ -172,6 +172,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border-color: var(--yellow);
   color: var(--yellow);
 }
+/* біла основа + темний текст (як соц-кнопки на сторінці контактів) */
+.btn--white {
+  background: var(--white);
+  color: #0a0a0a;
+  border: 1px solid var(--white);
+}
+.btn--white:hover {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #000;
+  box-shadow: 0 0 32px rgba(242, 255, 0, 0.35);
+}
 .btn--sm { padding: 12px 18px; font-size: 0.72rem; }
 .btn__icon { font-size: 0.7em; }
 
@@ -390,23 +402,77 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .reveal-line { display: block; overflow: hidden; padding-top: 0.22em; margin-top: -0.22em; }
 .reveal-line > span { display: block; will-change: transform; }
 
+/* ---------- великий екран (feature-банер) ---------- */
+.feature {
+  position: relative;
+  width: 100%;
+  height: clamp(850px, 95vh, 900px);
+  overflow: hidden;
+  background: var(--bg);
+}
+.feature__media {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0% 0% 0% 0%);
+  will-change: clip-path;
+}
+.feature__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 26%;
+  transform: scale(1.12);
+  will-change: transform;
+}
+/* затемнення: м'який стик зверху + сильне затемнення знизу під заголовок */
+.feature__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 0%,
+    rgba(6, 6, 6, 0) 12%,
+    rgba(6, 6, 6, 0.12) 34%,
+    rgba(6, 6, 6, 0.55) 55%,
+    rgba(6, 6, 6, 0.9) 82%,
+    var(--bg) 100%
+  );
+}
+.feature__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
+/* тіні для читабельності підпису над зображенням */
+.feature__caption .section-index { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.85); }
+.feature__caption .section-title { text-shadow: 0 2px 30px rgba(0, 0, 0, 0.45); }
+/* підзаголовок — єдиний блок із заголовком, прямо під ним на банері */
+.feature__intro {
+  margin-top: clamp(16px, 2.2vh, 24px);
+  max-width: 540px;
+  color: rgba(244, 242, 236, 0.82);
+  font-size: clamp(0.92rem, 1.4vw, 1.02rem);
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.6);
+}
+@media (max-width: 600px) {
+  .feature { height: clamp(440px, 74vh, 680px); }
+}
+
 /* ---------- сольники ---------- */
 .specials {
   position: relative;
-  padding-top: clamp(90px, 14vh, 160px);
+  /* десктоп: великий відступ дає центрування карток у піні, тут лишаємо малий */
+  padding-top: clamp(12px, 1.5vh, 22px);
   background: var(--bg);
-}
-.specials__head { margin-bottom: clamp(40px, 7vh, 80px); }
-.specials__intro {
-  margin-top: 26px;
-  max-width: 520px;
-  color: var(--muted);
 }
 .specials__pin {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 86vh;
+  min-height: 74vh;
 }
 .specials__track {
   display: flex;
@@ -525,7 +591,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   .card { grid-template-columns: 1fr; }
   .card__poster { max-width: 420px; }
   .specials__progress { display: none; }
-  .specials { padding-bottom: 90px; }
+  /* мобільний: піна нема, тож більший відступ перед листалкою дає сам padding */
+  .specials { padding-top: clamp(72px, 11vh, 104px); padding-bottom: 90px; }
 }
 
 /* ---------- про Єгора ---------- */
@@ -639,11 +706,26 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-weight: 600;
   font-size: clamp(1rem, 2.4vw, 1.5rem);
   text-transform: uppercase;
-  min-width: 9ch;
+  /* фіксована ширина колонки → усі міста вирівняні по лівому краю */
+  flex: 0 0 12.5em;
+  white-space: nowrap;
 }
 .tour__city {
   flex: 1;
   font-size: clamp(0.95rem, 2vw, 1.2rem);
+  color: var(--white);
+}
+.tour__venue {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.tour__buy { flex-shrink: 0; }
+.tour__lead {
+  margin: 22px 0 4px;
+  max-width: 560px;
   color: var(--muted);
 }
 .tour__stamp {
@@ -658,54 +740,45 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   transform: rotate(-6deg);
   text-transform: uppercase;
 }
-.tour__row--empty { justify-content: center; }
-.tour__quote {
+.tour__done {
+  flex-shrink: 0;
   font-family: var(--font-display);
-  font-weight: 300;
-  font-size: clamp(0.95rem, 2.4vw, 1.4rem);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--muted);
-  text-align: center;
+  white-space: nowrap;
 }
+.tour__row--past .tour__city,
+.tour__row--past .tour__venue { color: var(--muted); }
 .tour__actions {
   margin-top: clamp(36px, 6vh, 60px);
   display: flex; gap: 16px; flex-wrap: wrap;
 }
-
-/* ---------- мерч ---------- */
-.merch {
-  border-top: 1px solid var(--line);
-  background: var(--bg-2);
+/* адаптиви: кнопки туру — розміром як кнопки в картках сольників (.btn--sm) */
+@media (max-width: 899px) {
+  .tour__actions .btn { padding: 12px 18px; font-size: 0.72rem; }
 }
-.merch__link {
-  display: block;
-  padding: clamp(60px, 10vh, 110px) 0;
-  position: relative;
+/* мобільний: дата меншим рядком зверху, місто + кнопка/штамп праворуч в один рядок */
+@media (max-width: 620px) {
+  .tour__row {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 18px 6px;
+  }
+  .tour__date { flex: 0 0 100%; font-size: 0.9rem; }
+  .tour__city { flex: 1 1 0; min-width: 0; font-size: 0.95rem; }
+  .tour__venue { font-size: 0.74rem; }
+  .tour__buy { flex: 0 0 auto; padding: 8px 13px; font-size: 0.6rem; }
+  .tour__stamp { flex: 0 0 auto; padding: 6px 12px; font-size: 0.62rem; }
+  .tour__done { flex: 0 0 auto; font-size: 0.66rem; }
 }
-.marquee--merch span {
-  font-size: clamp(3.2rem, 11vw, 9rem);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  color: var(--bg-2);
-  -webkit-text-stroke: 3px rgba(244, 242, 236, 0.5);
-  paint-order: stroke fill;
-  transition: -webkit-text-stroke-color 0.4s;
-  line-height: 1.1;
+/* сторінка повного туру: ширша колонка дати (є місяці «листопада»/«грудня») */
+@media (min-width: 621px) {
+  .tour-list-page .tour__date { flex-basis: 14.25em; }
 }
-.merch__link:hover .marquee--merch span {
-  -webkit-text-stroke-color: var(--yellow);
-}
-.merch__hint {
-  margin-top: 26px;
-  text-align: center;
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  font-weight: 400;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--muted);
-  transition: color 0.3s;
-}
-.merch__link:hover .merch__hint { color: var(--yellow); }
 
 /* ---------- футер ---------- */
 .footer {
@@ -750,6 +823,213 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .footer__bottom a { color: var(--white); border-bottom: 1px solid var(--yellow-dim); }
 @media (max-width: 720px) {
   .footer__grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- сторінки контенту (legal) ---------- */
+.header--solid {
+  background: rgba(6, 6, 6, 0.85);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.legal { padding-top: var(--header-h); }
+.legal__inner {
+  width: min(860px, 100% - 48px);
+  margin-inline: auto;
+}
+.legal__hero {
+  padding: clamp(48px, 10vh, 120px) 0 clamp(28px, 4vh, 44px);
+  border-bottom: 1px solid var(--line);
+}
+.legal__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: clamp(22px, 4vh, 34px);
+  transition: color 0.25s, gap 0.25s;
+}
+.legal__back:hover { color: var(--yellow); gap: 12px; }
+.legal__title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 6vw, 4.2rem);
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.legal__updated {
+  margin-top: 16px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.legal__content { padding: clamp(36px, 6vh, 64px) 0 clamp(60px, 10vh, 120px); }
+.legal__content h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--yellow);
+  margin: clamp(32px, 5vh, 48px) 0 14px;
+}
+.legal__content > *:first-child { margin-top: 0; }
+.legal__content p {
+  margin-bottom: 16px;
+  color: rgba(244, 242, 236, 0.88);
+  line-height: 1.7;
+}
+.legal__content p.is-muted { color: var(--muted); }
+.legal__content p.is-quote {
+  color: var(--muted);
+  font-style: italic;
+  padding-left: 18px;
+  border-left: 2px solid var(--line);
+}
+.legal__content strong { color: var(--white); font-weight: 600; }
+.legal__content p a {
+  color: var(--yellow);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.legal__contacts {
+  margin-top: clamp(36px, 6vh, 56px);
+  padding-top: clamp(24px, 4vh, 36px);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.legal__contacts strong { color: var(--yellow); }
+
+/* ---------- контакт-сторінка ---------- */
+.contact__intro {
+  color: var(--muted);
+  max-width: 620px;
+  margin-bottom: clamp(28px, 5vh, 44px);
+}
+.contact__direct {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.contact__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding: clamp(15px, 2.4vh, 22px) clamp(16px, 2.5vw, 24px);
+  background: var(--bg-2);
+  text-decoration: none;
+  transition: background 0.25s;
+}
+.contact__line:hover { background: #141414; }
+.contact__label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.contact__value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  color: var(--white);
+  transition: color 0.25s;
+  text-align: right;
+}
+.contact__line:hover .contact__value { color: var(--yellow); }
+.contact__socials {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: clamp(40px, 7vh, 64px);
+}
+.contact__socials a {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #0a0a0a;
+  background: var(--white);
+  border: 1px solid var(--white);
+  border-radius: 3px;
+  padding: 12px 22px;
+  transition: transform 0.28s var(--ease-out), background 0.25s, border-color 0.25s,
+    box-shadow 0.28s, color 0.25s;
+  will-change: transform;
+}
+.contact__socials a:hover {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #000;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(242, 255, 0, 0.28);
+}
+.contact__socials a:active { transform: translateY(-1px) scale(0.97); }
+
+/* контакт-форма — на всю ширину контейнера, як блок з телефоном/email */
+.cform { max-width: none; }
+.cform__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.cform__field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.cform__field > span {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cform input,
+.cform textarea {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--white);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 14px 16px;
+  width: 100%;
+  transition: border-color 0.25s, background 0.25s;
+}
+.cform input::placeholder,
+.cform textarea::placeholder { color: #5c5c57; }
+.cform input:focus,
+.cform textarea:focus {
+  outline: none;
+  border-color: var(--yellow);
+  background: #111;
+}
+.cform textarea { resize: vertical; min-height: 140px; }
+.cform__hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cform__submit { margin-top: 4px; }
+.cform__status {
+  margin-top: 14px;
+  font-size: 0.88rem;
+  min-height: 1.2em;
+  color: var(--muted);
+}
+.cform__status.is-ok { color: var(--yellow); }
+.cform__status.is-err { color: var(--red); }
+@media (max-width: 560px) {
+  .cform__row { grid-template-columns: 1fr; }
 }
 
 /* ---------- модалка ---------- */

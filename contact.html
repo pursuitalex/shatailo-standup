@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контакти — Єгор Шатайло</title>
+  <meta name="description" content="Контакти Єгора Шатайла: телефон, email, соцмережі та форма зв’язку.">
+
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <div class="noise" aria-hidden="true"></div>
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+
+  <header class="header header--solid">
+    <a href="/" class="header__logo" data-hover aria-label="Єгор Шатайло — на головну">
+      <span class="logo-text">Єгор Шатайло</span>
+    </a>
+    <a href="/" class="btn btn--ghost btn--sm" data-hover>← На головну</a>
+  </header>
+
+  <main class="legal">
+    <section class="legal__hero">
+      <div class="legal__inner">
+        <a href="/" class="legal__back" data-hover>← Єгор Шатайло</a>
+        <h1 class="legal__title">Контакти</h1>
+      </div>
+    </section>
+
+    <section class="legal__content">
+      <div class="legal__inner contact">
+        <p class="contact__intro">Напишіть напряму або через форму нижче — відповім, щойно зможу.</p>
+
+        <div class="contact__direct">
+          <a class="contact__line" href="tel:+380934122826" data-hover>
+            <span class="contact__label">Телефон</span>
+            <span class="contact__value">+380 93 412 2826</span>
+          </a>
+          <a class="contact__line" href="mailto:egor.shatailo@gmail.com" data-hover>
+            <span class="contact__label">Email</span>
+            <span class="contact__value">egor.shatailo@gmail.com</span>
+          </a>
+        </div>
+
+        <div class="contact__socials">
+          <a href="https://www.instagram.com/egorshatailo/" target="_blank" rel="noopener" data-hover>Instagram</a>
+          <a href="https://twitter.com/shatailer" target="_blank" rel="noopener" data-hover>Twitter</a>
+          <a href="https://www.facebook.com/%D0%84%D0%B3%D0%BE%D1%80-%D0%A8%D0%B0%D1%82%D0%B0%D0%B9%D0%BB%D0%BE-%D0%9F%D1%83%D0%B1%D0%BB%D1%96%D1%87%D0%BD%D0%B0-%D0%A1%D1%82%D0%BE%D1%80%D1%96%D0%BD%D0%BA%D0%B0-106390265005034" target="_blank" rel="noopener" data-hover>Facebook</a>
+        </div>
+
+        <h2>Написати повідомлення</h2>
+        <form class="cform" id="contactForm" novalidate>
+          <!-- Web3Forms: впишіть ключ замість WEB3FORMS_KEY, щоб слати з сайту -->
+          <input type="hidden" name="access_key" value="WEB3FORMS_KEY">
+          <input type="hidden" name="subject" value="Повідомлення з сайту Єгора Шатайла">
+          <input type="hidden" name="from_name" value="Сайт Єгора Шатайла">
+
+          <div class="cform__row">
+            <label class="cform__field">
+              <span>Ім’я</span>
+              <input type="text" name="name" required autocomplete="name" placeholder="Як вас звати">
+            </label>
+            <label class="cform__field">
+              <span>Email</span>
+              <input type="email" name="email" required autocomplete="email" placeholder="you@example.com">
+            </label>
+          </div>
+
+          <label class="cform__field">
+            <span>Повідомлення</span>
+            <textarea name="message" rows="6" required placeholder="Ваше повідомлення…"></textarea>
+          </label>
+
+          <input type="checkbox" name="botcheck" class="cform__hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+          <button type="submit" class="btn btn--solid cform__submit" data-hover data-magnetic>Надіслати</button>
+          <p class="cform__status" id="cformStatus" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__grid">
+      <div class="footer__brand">
+        <span class="logo-text logo-text--lg">Єгор Шатайло</span>
+        <p>Стендап. Сольники. Мерч.</p>
+      </div>
+      <nav class="footer__col" aria-label="Соцмережі">
+        <h4>Соцмережі</h4>
+        <a href="https://www.instagram.com/egorshatailo/" target="_blank" rel="noopener" data-hover>Instagram</a>
+        <a href="https://twitter.com/shatailer" target="_blank" rel="noopener" data-hover>Twitter</a>
+        <a href="https://www.youtube.com/results?search_query=%D1%94%D0%B3%D0%BE%D1%80+%D1%88%D0%B0%D1%82%D0%B0%D0%B9%D0%BB%D0%BE" target="_blank" rel="noopener" data-hover>YouTube</a>
+      </nav>
+      <nav class="footer__col" aria-label="Документи">
+        <h4>Документи</h4>
+        <a href="/dogovir-oferty" data-hover>Договір оферти</a>
+        <a href="/privacy-policy" data-hover>Політика конфіденційності</a>
+        <a href="/contact" data-hover>Контакти</a>
+      </nav>
+    </div>
+    <div class="container footer__bottom">
+      <p>© <span id="footerYear">2026</span> Єгор Шатайло. Концепт-редизайн — весь контент і відео належать <a href="https://shatailo.com/" target="_blank" rel="noopener" data-hover>shatailo.com</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/page.js"></script>
+  <script src="/js/contact.js"></script>
+</body>
+</html>
