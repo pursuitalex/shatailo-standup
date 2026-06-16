@@ -286,6 +286,9 @@ mm.add("(max-width: 899px)", () => {
 /* ---------- 3D-тілт карток + позиція бліку ---------- */
 if (isDesktop && !prefersReduced) {
   document.querySelectorAll("[data-tilt]").forEach((card) => {
+    // перспектива — один раз і назавжди, щоб вона НЕ анімувалась від ~0
+    // (інакше постер із translateZ на мить спалахує величезним)
+    gsap.set(card, { transformPerspective: 900 });
     let raf = 0;
     card.addEventListener("pointermove", (e) => {
       cancelAnimationFrame(raf);
@@ -298,7 +301,6 @@ if (isDesktop && !prefersReduced) {
         gsap.to(card, {
           rotateY: (px - 0.5) * 7,
           rotateX: (0.5 - py) * 7,
-          transformPerspective: 900,
           duration: 0.5,
           ease: "power2.out",
         });
@@ -389,11 +391,12 @@ const backdrop = document.getElementById("modalBackdrop");
 const panel = modal.querySelector(".modal__panel");
 let lastFocus = null;
 
-function openModal(ytId, title, buyHref) {
+function openModal(ytId, title, buyHref, start) {
   lastFocus = document.activeElement;
   modalTitle.textContent = title || "Фрагмент виступу";
   if (buyHref) modalBuy.href = buyHref;
-  modalFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`;
+  const startParam = start ? `&start=${parseInt(start, 10)}` : "";
+  modalFrame.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0${startParam}`;
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden", "false");
   document.body.style.overflow = "hidden";
@@ -422,7 +425,7 @@ document.querySelectorAll("[data-trailer]").forEach((btn) => {
     const card = btn.closest(".card");
     const buyLink = card?.querySelector('a[href*="shatailo.com/shop"]')?.href
       || "https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/";
-    openModal(btn.dataset.trailer, btn.dataset.trailerTitle, buyLink);
+    openModal(btn.dataset.trailer, btn.dataset.trailerTitle, buyLink, btn.dataset.trailerStart);
   });
 });
 document.getElementById("modalClose").addEventListener("click", closeModal);

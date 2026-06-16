@@ -46,10 +46,12 @@
       <a href="#about" data-hover>Про Єгора</a>
       <a href="#tour" data-hover>Тур</a>
     </nav>
-    <a href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/" target="_blank" rel="noopener" class="btn btn--solid header__cta" data-hover data-magnetic>
-      <span class="cta-full">Придбати сольник</span>
-      <span class="cta-short">Придбати</span>
-    </a>
+    <div class="header__right">
+      <button class="btn btn--solid header__cta" data-hover data-magnetic data-add-to-cart="kosmichnyi">
+        <span class="cta-full">Придбати сольник</span>
+        <span class="cta-short">Придбати</span>
+      </button>
+    </div>
   </header>
 
   <main>
@@ -71,13 +73,13 @@
         </p>
         <div class="hero__actions" id="heroActions">
           <button class="btn btn--solid" data-hover data-magnetic
-                  data-trailer="v2ySJscUFtU"
+                  data-trailer="h5b3UE8VI-s"
                   data-trailer-title="Космічний А#уй — фрагмент">
             <span class="btn__icon">▶</span> Дивитись фрагмент
           </button>
-          <a href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/" target="_blank" rel="noopener" class="btn btn--ghost" data-hover data-magnetic>
-            Придбати — 500 ₴
-          </a>
+          <button class="btn btn--ghost" data-hover data-magnetic data-add-to-cart="kosmichnyi">
+            Додати в кошик — 500 ₴
+          </button>
         </div>
       </div>
 
@@ -135,10 +137,9 @@
               </p>
               <div class="card__actions">
                 <button class="btn btn--ghost btn--sm" data-hover
-                        data-trailer="v2ySJscUFtU"
+                        data-trailer="h5b3UE8VI-s"
                         data-trailer-title="Космічний А#уй — фрагмент">▶ Фрагмент</button>
-                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
-                   href="https://shatailo.com/shop/video/solnyk-kosmichnyy-ahui/">Придбати — 500 ₴</a>
+                <button class="btn btn--solid btn--sm" data-hover data-add-to-cart="kosmichnyi">Додати — 500 ₴</button>
               </div>
             </div>
           </article>
@@ -158,9 +159,9 @@
               <div class="card__actions">
                 <button class="btn btn--ghost btn--sm" data-hover
                         data-trailer="lYx-0zywj8E"
+                        data-trailer-start="421"
                         data-trailer-title="Повітряне Зашибісь — фрагмент">▶ Фрагмент</button>
-                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
-                   href="https://shatailo.com/shop/video/solnyk-povitryane-zashybis/">Придбати — 400 ₴</a>
+                <button class="btn btn--solid btn--sm" data-hover data-add-to-cart="povitryane">Додати — 400 ₴</button>
               </div>
             </div>
           </article>
@@ -179,10 +180,10 @@
               </p>
               <div class="card__actions">
                 <button class="btn btn--ghost btn--sm" data-hover
-                        data-trailer="j3hv67-ptXg"
+                        data-trailer="qaG_LTXGEhk"
+                        data-trailer-start="25"
                         data-trailer-title="Секунда Бабака — фрагмент">▶ Фрагмент</button>
-                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
-                   href="https://shatailo.com/shop/video/sekynda-babaka/">Придбати — 300 ₴</a>
+                <button class="btn btn--solid btn--sm" data-hover data-add-to-cart="sekunda">Додати — 300 ₴</button>
               </div>
             </div>
           </article>
@@ -203,8 +204,7 @@
                 <button class="btn btn--ghost btn--sm" data-hover
                         data-trailer="G8nOmNe1TBs"
                         data-trailer-title="Тимчасові незручності — уривок про селеб">▶ Фрагмент</button>
-                <a class="btn btn--solid btn--sm" data-hover target="_blank" rel="noopener"
-                   href="https://shatailo.com/shop/video/album/">Придбати — 250 ₴</a>
+                <button class="btn btn--solid btn--sm" data-hover data-add-to-cart="tymchasovi">Додати — 250 ₴</button>
               </div>
             </div>
           </article>
@@ -337,6 +337,7 @@
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollToPlugin.min.js"></script>
+  <script src="/js/store.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
