@@ -24,6 +24,9 @@
 
 ## 🔴 Не реалізовано (backlog)
 
+- **Демо-акаунт** (`demo@gmail.com`, будь-який пароль) — при вході авто-наповнює
+  кабінет тестовими замовленнями (для перегляду флоу). **Прибрати перед продом**
+  (`seedDemoOrders`/`DEMO_EMAIL` у `js/store.js`).
 - **Web3Forms** для контакт-форми — зараз mailto-фолбек; треба вставити Access Key
   (web3forms.com, email egor.shatailo@gmail.com) замість `WEB3FORMS_KEY` у `contact.html`.
 - **Реальний бекенд (Supabase)** — auth (Google), користувачі, кошик, замовлення, бібліотека.

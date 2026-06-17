@@ -13,10 +13,34 @@
   var ORDERS_KEY = "shatailo_orders";
 
   var PRODUCTS = {
-    kosmichnyi: { id: "kosmichnyi", title: "Сольник «Космічний А#уй»", price: 500, poster: "/assets/posters/poster-kosmichnyi.jpg", trailer: "h5b3UE8VI-s", start: 0 },
-    povitryane: { id: "povitryane", title: "Сольник «Повітряне Зашибісь»", price: 400, poster: "/assets/posters/poster-povitryane.png", trailer: "lYx-0zywj8E", start: 421 },
-    sekunda:    { id: "sekunda",    title: "Сольник «Секунда Бабака»",    price: 300, poster: "/assets/posters/poster-sekunda.jpg", trailer: "qaG_LTXGEhk", start: 25 },
-    tymchasovi: { id: "tymchasovi", title: "Сольник «Тимчасові незручності»", price: 250, poster: "/assets/posters/poster-tymchasovi.jpg", trailer: "G8nOmNe1TBs", start: 0 }
+    kosmichnyi: {
+      id: "kosmichnyi", title: "Сольник «Космічний А#уй»", price: 500,
+      poster: "/assets/posters/poster-kosmichnyi.jpg", trailer: "h5b3UE8VI-s", start: 0,
+      meta: "Четвертий всеукраїнський сольник за бабки · 76 хв",
+      info: "2026 · 76 хв · четвертий сольник",
+      desc: "До вашої уваги новий сольний стендап концерт 2026-го року про вітчизняну пропаганду, новинну дихотомію, наступну мить, двері божевілля спортсменів та первородний гріх українців. Купуючи цей сольник, ви отримуєте право дивитись його на цьому сайті необмежено з моменту придбання. Присутнє матюччя. Приємного перегляду."
+    },
+    povitryane: {
+      id: "povitryane", title: "Сольник «Повітряне Зашибісь»", price: 400,
+      poster: "/assets/posters/poster-povitryane.png", trailer: "lYx-0zywj8E", start: 421,
+      meta: "Третій всеукраїнський сольник за бабки · 70 хв",
+      info: "2024 · 70 хв · третій сольник",
+      desc: "Новий сольник «Повітряне Зашибісь» 2024-го року про відносини, супер зброю США, країни західного блоку, спокій, євробачення, західну аудиторію та неймовірний кайф від радості бути українцем. Купуючи цей сольник, ви отримуєте право дивитись його на цьому сайті необмежено з моменту придбання. Присутнє матюччя. Приємного перегляду."
+    },
+    sekunda: {
+      id: "sekunda", title: "Сольник «Секунда Бабака»", price: 300,
+      poster: "/assets/posters/poster-sekunda.jpg", trailer: "qaG_LTXGEhk", start: 25,
+      meta: "Другий всеукраїнський сольник за бабки · 83 хв",
+      info: "2023 · 83 хв · другий сольник",
+      desc: "Мій новий сольник «Секунда Бабака» 2023-го року про божевілля, попайку, транквілізатори, суїцидальні думки, повітряні тривоги, поплавського, політичних експертів, синю філософію та часово-просторовий парадокс життя в Україні під час повномасштабного вторгнення росії. Купуючи цей сольник, ви отримуєте право дивитись його на цьому сайті необмежено з моменту придбання. Як завжди – присутнє матюччя. Приємного перегляду."
+    },
+    tymchasovi: {
+      id: "tymchasovi", title: "Сольник «Тимчасові незручності»", price: 250,
+      poster: "/assets/posters/poster-tymchasovi.jpg", trailer: "G8nOmNe1TBs", start: 0,
+      meta: "Перший всеукраїнський сольник за бабки · 67 хв",
+      info: "2021 · 67 хв · перший сольник",
+      desc: "Включає в себе такі біти: розвиток України та її місце в світі, правоохоронні органи, Чікатіло, українські селеби, легкі наркотичні речовини, волелюбність українського народу, конституція, апокаліпсис, судова реформа та гражданє Зємлі. Купуючи цей сольник ви отримуєте право дивитись його на цьому сайті необмежено з моменту придбання. Присутнє матюччя. Приємного перегляду."
+    }
   };
 
   /* ---------- стан ---------- */
@@ -28,7 +52,8 @@
 
   var cart = readJSON(CART_KEY, []);     // [{ id, qty }]
   var user = readJSON(USER_KEY, null);   // { name, lastName, displayName, email, provider }
-  var orders = readJSON(ORDERS_KEY, []); // [{ num, date, items:[{id,title,price,qty}], total, name, email, status }]
+  var orders = readJSON(ORDERS_KEY, {}); // { email: [{ num, date, items, total, name, email, status }] }
+  if (Array.isArray(orders)) orders = {}; // міграція зі старого (плоского) формату
 
   var listeners = [];
   function emit() { listeners.forEach(function (fn) { fn(); }); }
@@ -40,14 +65,21 @@
   }
   function saveOrders() { writeJSON(ORDERS_KEY, orders); emit(); }
 
-  /* ---------- замовлення + бібліотека ---------- */
+  /* ---------- замовлення + бібліотека (per-user, за email) ---------- */
+  var DEMO_EMAIL = "demo@gmail.com";
+
+  function userEmail() { return (user && user.email) || "guest"; }
+  function userOrders() {
+    var e = userEmail();
+    if (!orders[e]) orders[e] = [];
+    return orders[e];
+  }
   function addOrder(buyer) {
     var items = cartItems().map(function (i) { return { id: i.id, title: i.title, price: i.price, qty: i.qty }; });
     if (!items.length) return null;
-    var num = String(Date.now()).slice(-6);
     var d = new Date();
     var order = {
-      num: num,
+      num: String(Date.now()).slice(-6),
       date: d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2),
       items: items,
       total: cartSubtotal(),
@@ -55,17 +87,34 @@
       email: (buyer && buyer.email) || (user && user.email) || "",
       status: "Виконано"
     };
-    orders.unshift(order);
+    userOrders().unshift(order);
     saveOrders();
     return order;
   }
-  function getOrders() { return orders.slice(); }
-  function getOrder(num) { return orders.find(function (o) { return o.num === num; }); }
-  // бібліотека = унікальні сольники з усіх замовлень
+  function getOrders() { return userOrders().slice(); }
+  function getOrder(num) { return userOrders().find(function (o) { return o.num === num; }); }
+  // бібліотека = унікальні сольники з усіх замовлень користувача
   function library() {
     var ids = {};
-    orders.forEach(function (o) { o.items.forEach(function (it) { if (PRODUCTS[it.id]) ids[it.id] = true; }); });
+    userOrders().forEach(function (o) { o.items.forEach(function (it) { if (PRODUCTS[it.id]) ids[it.id] = true; }); });
     return Object.keys(ids).map(function (id) { return PRODUCTS[id]; });
+  }
+  // демо-акаунт: при вході під demo@gmail.com наповнюємо тестовими замовленнями
+  function seedDemoOrders() {
+    if (orders[DEMO_EMAIL] && orders[DEMO_EMAIL].length) return;
+    var o = function (num, date, ids, total) {
+      return {
+        num: num, date: date,
+        items: ids.map(function (id) { return { id: id, title: PRODUCTS[id].title, price: PRODUCTS[id].price, qty: 1 }; }),
+        total: total, name: "Демо Користувач", email: DEMO_EMAIL, status: "Виконано"
+      };
+    };
+    orders[DEMO_EMAIL] = [
+      o("100231", "2026-06-14", ["kosmichnyi"], 500),
+      o("100198", "2026-05-02", ["povitryane", "sekunda"], 700),
+      o("100042", "2026-02-18", ["tymchasovi"], 250)
+    ];
+    saveOrders();
   }
 
   /* ---------- кошик ---------- */
@@ -99,7 +148,11 @@
   /* ---------- авторизація (mock) ---------- */
   function isLoggedIn() { return !!user; }
   function getUser() { return user; }
-  function login(u) { user = u; saveUser(); }
+  function login(u) {
+    user = u;
+    saveUser();
+    if (u && u.email && u.email.toLowerCase() === DEMO_EMAIL) seedDemoOrders();
+  }
   function logout() { user = null; saveUser(); }
 
   /* ---------- іконки ---------- */
@@ -317,9 +370,8 @@
       '    <div class="checkout__pay">' +
       '      <span class="checkout__pay-label">Інтернет-еквайринг</span>' +
       '      <p class="checkout__pay-note">Сплатіть безпечно карткою через сервіс еквайрингу. (Демо — реальна оплата не відбувається.)</p>' +
+      '      <img class="checkout__pay-logo" src="/assets/payment/wayforpay-2.png" alt="WayForPay — інтернет-еквайринг" width="180">' +
       '    </div>' +
-      '    <button class="btn btn--solid checkout__submit" type="submit" data-hover>Підтвердити замовлення</button>' +
-      '    <p class="checkout__legal"><a href="/dogovir-oferty">Договір оферти</a> · <a href="/privacy-policy">Політика конфіденційності</a></p>' +
       '  </div>' +
       '  <aside class="checkout__col checkout__col--summary">' +
       '    <h3 class="checkout__h">Ваше замовлення</h3>' +
@@ -327,6 +379,8 @@
       '      <tr class="checkout__summary-sub"><td>Проміжний підсумок</td><td>' + uah(cartSubtotal()) + '</td></tr>' +
       '      <tr class="checkout__summary-grand"><td>Загалом</td><td>' + uah(cartSubtotal()) + '</td></tr>' +
       '    </tbody></table>' +
+      '    <button class="btn btn--solid btn--sm checkout__submit" type="submit" data-hover>Підтвердити</button>' +
+      '    <p class="checkout__legal"><a href="/dogovir-oferty">Договір оферти</a> · <a href="/privacy-policy">Політика конфіденційності</a></p>' +
       '  </aside>' +
       '</form>';
   }
@@ -368,7 +422,7 @@
     var dec = closest("[data-qty-dec]"); if (dec) { var id2 = dec.getAttribute("data-qty-dec"); setQty(id2, (cart.find(function(c){return c.id===id2;})||{}).qty - 1); return; }
     var rm = closest("[data-rm]"); if (rm) { removeFromCart(rm.getAttribute("data-rm")); return; }
 
-    if (closest("[data-google]")) { login({ name: "Гість", lastName: "", displayName: "Гість Google", email: "guest@gmail.com", provider: "google" }); closeAuth(); return; }
+    if (closest("[data-google]")) { login({ name: "Гість", lastName: "", displayName: "Гість Google", email: "guest@gmail.com", provider: "google" }); window.location.assign("/account"); return; }
 
     /* кабінет */
     var play = closest("[data-play]"); if (play) { e.preventDefault(); openPlayer(play.getAttribute("data-play")); return; }
@@ -387,9 +441,13 @@
     if (form.matches("[data-auth-form]")) {
       e.preventDefault();
       var email = form.email.value.trim();
-      var nm = email.split("@")[0] || "Користувач";
-      login({ name: nm, lastName: "", displayName: nm, email: email, provider: "email" });
-      closeAuth();
+      if (email.toLowerCase() === DEMO_EMAIL) {
+        login({ name: "Демо", lastName: "Користувач", displayName: "Демо", email: DEMO_EMAIL, provider: "email" });
+      } else {
+        var nm = email.split("@")[0] || "Користувач";
+        login({ name: nm, lastName: "", displayName: nm, email: email, provider: "email" });
+      }
+      window.location.assign("/account");
       return;
     }
     if (form.matches("[data-checkout-form]")) {
@@ -431,8 +489,11 @@
       '  <header class="playermodal__head"><h3 data-player-title>Перегляд</h3>' +
       '    <button class="playermodal__close" data-player-close aria-label="Закрити" data-hover>✕</button></header>' +
       '  <div class="playermodal__video"><iframe data-player-frame src="" title="Перегляд сольника" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>' +
-      '  <footer class="playermodal__foot"><p>Це концепт — показано фрагмент. Повний сольник доступний на shatailo.com.</p></footer>' +
-      "</div>";
+      '  <footer class="playermodal__foot">' +
+      '    <p class="playermodal__meta" data-player-meta></p>' +
+      '    <p class="playermodal__desc" data-player-desc></p>' +
+      '    <p class="playermodal__note">Це концепт — показано фрагмент. Повний сольник доступний на shatailo.com.</p>' +
+      "  </footer></div>";
     document.body.appendChild(el);
   }
   function openPlayer(id) {
@@ -440,6 +501,8 @@
     injectPlayer();
     var m = document.getElementById("playerModal");
     m.querySelector("[data-player-title]").textContent = (p.title || "Перегляд").replace("Сольник ", "");
+    m.querySelector("[data-player-meta]").textContent = p.meta || "";
+    m.querySelector("[data-player-desc]").textContent = p.desc || "";
     var startParam = p.start ? "&start=" + p.start : "";
     m.querySelector("[data-player-frame]").src = "https://www.youtube-nocookie.com/embed/" + p.trailer + "?autoplay=1&rel=0" + startParam;
     m.classList.add("is-open"); m.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden";
@@ -480,6 +543,7 @@
         '<div class="acc-lib__poster"><img src="' + p.poster + '" alt="">' +
           '<button class="acc-lib__play" data-play="' + p.id + '" aria-label="Дивитись"><span>▶</span></button></div>' +
         '<div class="acc-lib__body"><h3>' + p.title.replace("Сольник ", "") + "</h3>" +
+          '<p class="acc-lib__info">' + (p.info || "") + "</p>" +
           '<button class="btn btn--solid btn--sm" data-play="' + p.id + '" data-hover>Дивитись</button></div></article>';
     }).join("") + "</div>";
   }
