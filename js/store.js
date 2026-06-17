@@ -210,6 +210,23 @@
     document.body.appendChild(el);
   }
 
+  /* ---------- картка товару (міні-кошик + мобільний вигляд /cart) ---------- */
+  function cartItemCard(i) {
+    return '<div class="mc-item">' +
+      '<img class="mc-item__img" src="' + i.poster + '" alt="">' +
+      '<div class="mc-item__info">' +
+        '<p class="mc-item__title">' + i.title + '</p>' +
+        '<div class="mc-item__row">' +
+          '<div class="qty"><button class="qty__btn" data-qty-dec="' + i.id + '" aria-label="Менше">–</button>' +
+          '<span class="qty__val">' + i.qty + '</span>' +
+          '<button class="qty__btn" data-qty-inc="' + i.id + '" aria-label="Більше">+</button></div>' +
+          '<span class="mc-item__price">' + uah(i.lineTotal) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<button class="mc-item__rm" data-rm="' + i.id + '" aria-label="Прибрати">' + ICON_CLOSE + '</button>' +
+      '</div>';
+  }
+
   /* ---------- рендер міні-кошика ---------- */
   function renderMiniCart() {
     var body = document.querySelector("#miniCart [data-cart-body]");
@@ -221,21 +238,7 @@
       foot.innerHTML = "";
       return;
     }
-    body.innerHTML = items.map(function (i) {
-      return '<div class="mc-item">' +
-        '<img class="mc-item__img" src="' + i.poster + '" alt="">' +
-        '<div class="mc-item__info">' +
-          '<p class="mc-item__title">' + i.title + '</p>' +
-          '<div class="mc-item__row">' +
-            '<div class="qty"><button class="qty__btn" data-qty-dec="' + i.id + '" aria-label="Менше">–</button>' +
-            '<span class="qty__val">' + i.qty + '</span>' +
-            '<button class="qty__btn" data-qty-inc="' + i.id + '" aria-label="Більше">+</button></div>' +
-            '<span class="mc-item__price">' + uah(i.lineTotal) + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<button class="mc-item__rm" data-rm="' + i.id + '" aria-label="Прибрати">' + ICON_CLOSE + '</button>' +
-        '</div>';
-    }).join("");
+    body.innerHTML = items.map(cartItemCard).join("");
     foot.innerHTML =
       '<div class="minicart__subtotal"><span>Проміжний підсумок</span><b>' + uah(cartSubtotal()) + '</b></div>' +
       '<div class="minicart__actions">' +
@@ -323,7 +326,7 @@
     var rows = items.map(function (i) {
       return '<tr>' +
         '<td class="cp-cell-rm"><button class="cp-rm" data-rm="' + i.id + '" aria-label="Прибрати">' + ICON_CLOSE + '</button></td>' +
-        '<td class="cp-cell-prod"><img src="' + i.poster + '" alt=""><span>' + i.title + '</span></td>' +
+        '<td class="cp-cell-prod"><div class="cp-prod"><img src="' + i.poster + '" alt=""><span>' + i.title + '</span></div></td>' +
         '<td data-label="Ціна">' + uah(i.price) + '</td>' +
         '<td data-label="Кількість"><div class="qty"><button class="qty__btn" data-qty-dec="' + i.id + '">–</button><span class="qty__val">' + i.qty + '</span><button class="qty__btn" data-qty-inc="' + i.id + '">+</button></div></td>' +
         '<td data-label="Підсумок"><b>' + uah(i.lineTotal) + '</b></td>' +
@@ -331,13 +334,17 @@
     }).join("");
     root.innerHTML =
       '<div class="cartpage__table-wrap"><table class="cartpage__table">' +
-      '<thead><tr><th></th><th>Товар</th><th>Ціна</th><th>Кількість</th><th>Проміжний підсумок</th></tr></thead>' +
+      '<thead><tr><th></th><th>Товар</th><th>Ціна</th><th>Кількість</th><th>Підсумок</th></tr></thead>' +
       '<tbody>' + rows + '</tbody></table></div>' +
-      '<div class="cartpage__totals">' +
-        '<h2 class="cartpage__totals-title">Підсумки кошика</h2>' +
-        '<div class="cartpage__totals-row"><span>Проміжний підсумок</span><b>' + uah(cartSubtotal()) + '</b></div>' +
-        '<div class="cartpage__totals-row cartpage__totals-row--grand"><span>Загалом</span><b>' + uah(cartSubtotal()) + '</b></div>' +
-        '<a class="btn btn--solid cartpage__checkout" data-hover href="/checkout">Перейти до оформлення</a>' +
+      '<div class="cartpage__cards">' + items.map(cartItemCard).join("") + '</div>' +
+      '<div class="cartpage__foot">' +
+        '<a class="cartpage__continue" data-hover href="/#solnyky">← Продовжити покупки</a>' +
+        '<div class="cartpage__totals">' +
+          '<h2 class="cartpage__totals-title">Підсумки кошика</h2>' +
+          '<div class="cartpage__totals-row"><span>Проміжний підсумок</span><b>' + uah(cartSubtotal()) + '</b></div>' +
+          '<div class="cartpage__totals-row cartpage__totals-row--grand"><span>Загалом</span><b>' + uah(cartSubtotal()) + '</b></div>' +
+          '<a class="btn btn--solid cartpage__checkout" data-hover href="/checkout">Перейти до оформлення</a>' +
+        '</div>' +
       '</div>';
   }
 
@@ -530,7 +537,17 @@
     };
     return '<nav class="acc-nav">' +
       tab("library", "Сольники") + tab("orders", "Замовлення") + tab("profile", "Профіль") +
-      '<button class="acc-tab acc-tab--logout" data-account-logout type="button" data-hover>Вийти</button></nav>';
+      '</nav>';
+  }
+  function focusActiveTab() {
+    var run = function () {
+      var nav = document.querySelector("[data-account-page] .acc-nav");
+      var t = nav && nav.querySelector(".acc-tab.is-active");
+      if (!t) return;
+      nav.scrollLeft += t.getBoundingClientRect().left - nav.getBoundingClientRect().left - 12;
+    };
+    requestAnimationFrame(run);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
   }
   function accLibrary() {
     var lib = library();
@@ -606,8 +623,16 @@
     var tab = accountTab();
     var content = tab === "orders" ? accOrders() : (tab === "profile" ? accProfile() : accLibrary());
     root.innerHTML =
-      '<p class="acc-welcome">Вітаємо, <b>' + (u.displayName || u.name || "друже") + "</b> 👋</p>" +
+      '<div class="acc-head">' +
+        '<p class="acc-greet">Вітаємо 👋</p>' +
+        '<div class="acc-head__row">' +
+          '<span class="acc-welcome__name">' + (u.displayName || u.name || "друже") + "</span>" +
+          '<button class="acc-logout" data-account-logout type="button" data-hover>Вийти</button>' +
+        "</div>" +
+      "</div>" +
       accNav(tab) + '<div class="acc-content">' + content + "</div>";
+    // активний таб — у зону видимості (таби з горизонтальним скролом)
+    focusActiveTab();
   }
 
   /* ============================================================
