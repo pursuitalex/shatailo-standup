@@ -392,20 +392,27 @@
       '</form>';
   }
 
-  function renderCheckoutDone() {
+  function renderCheckoutDone(order) {
     var root = document.querySelector("[data-checkout-page]");
     if (!root) return;
     root.dataset.done = "1";
+    var num = order && order.num ? order.num : "";
+    var email = (order && order.email) || (user && user.email) || "";
     root.innerHTML =
       '<div class="checkout__done">' +
       '  <div class="checkout__done-mark">✓</div>' +
-      '  <h2>Замовлення прийнято!</h2>' +
-      '  <p>Дякуємо! Сольники додано у ваш кабінет — дивіться їх у розділі «Сольники». (Концепт — реальної оплати немає.)</p>' +
+      '  <h2>Дякуємо за покупку!</h2>' +
+      '  <p class="checkout__done-lead">Оплата пройшла успішно' + (num ? ', замовлення <b>№' + num + "</b> оформлено" : "") + ".</p>" +
+      (email ? '  <p class="checkout__done-email"><span class="checkout__done-email__ic" aria-hidden="true">✉</span>Підтвердження надіслали на <b>' + email + "</b></p>" : "") +
+      '  <p>Куплені сольники вже у вашому кабінеті — у розділі «Сольники».</p>' +
       '  <div class="checkout__done-actions">' +
-      '    <a class="btn btn--solid" data-hover href="/account">До кабінету</a>' +
+      '    <a class="btn btn--solid" data-hover href="/account">Перейти в кабінет</a>' +
       '    <a class="btn btn--ghost" data-hover href="/">На головну</a>' +
       '  </div>' +
+      '  <p class="checkout__done-note">Концепт — оплата демонстраційна.</p>' +
       '</div>';
+    // прокрутити нагору, щоб одразу побачити підтвердження (а не лишитись унизу, де була кнопка)
+    window.scrollTo(0, 0);
   }
 
   /* ============================================================
@@ -461,9 +468,9 @@
       e.preventDefault();
       var buyer = { name: form.name.value.trim(), email: form.email.value.trim() };
       if (!isLoggedIn()) login({ name: buyer.name, displayName: buyer.name, email: buyer.email, provider: "guest" });
-      addOrder(buyer);   // зберегти замовлення (читає кошик) ДО очищення
+      var order = addOrder(buyer);   // зберегти замовлення (читає кошик) ДО очищення
       clearCart();
-      renderCheckoutDone();
+      renderCheckoutDone(order);
       return;
     }
     if (form.matches("[data-profile-form]")) {
