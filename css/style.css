@@ -1407,9 +1407,30 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .acc-lib__body .acc-lib__info { font-family: var(--font-display); font-weight: 400; font-size: 0.8rem; color: var(--yellow); margin-top: -4px; }
 .acc-lib__body .btn { width: 100%; justify-content: center; }
 
+/* таблиця замовлень — власні стилі (раніше успадковувала .cartpage__table й ламалась) */
+.acc-orders-wrap { overflow-x: auto; }
+.acc-orders { width: 100%; border-collapse: collapse; }
+.acc-orders th {
+  text-align: left; padding: 0 16px 16px 0; border-bottom: 1px solid var(--line);
+  font-family: var(--font-display); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600;
+}
+.acc-orders td { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--line); vertical-align: middle; }
 .acc-orders td[data-label] { white-space: nowrap; }
 /* кнопка «Переглянути» — по правому краю рядка */
-.acc-orders th:last-child, .acc-orders td:last-child { text-align: right; }
+.acc-orders th:last-child, .acc-orders td:last-child { text-align: right; padding-right: 0; }
+
+/* телефон: рядок-таблиця → картка (підпис: значення) */
+@media (max-width: 600px) {
+  .acc-orders thead { display: none; }
+  .acc-orders, .acc-orders tbody, .acc-orders tr, .acc-orders td { display: block; }
+  .acc-orders tr { border: 1px solid var(--line); border-radius: 4px; padding: 12px 16px; margin-bottom: 14px; }
+  .acc-orders td { border: none; padding: 5px 0; text-align: left; white-space: normal; }
+  .acc-orders td[data-label]::before {
+    content: attr(data-label); display: inline-block; min-width: 92px;
+    color: var(--muted); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.08em;
+  }
+  .acc-orders td:last-child { text-align: left; margin-top: 10px; }
+}
 .acc-status { color: var(--yellow); font-family: var(--font-display); font-size: 0.78rem; }
 .acc-back { color: var(--muted); font-family: var(--font-display); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 18px; display: inline-block; transition: color 0.25s; }
 .acc-back:hover { color: var(--yellow); }

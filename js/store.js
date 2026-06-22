@@ -599,7 +599,7 @@
         '<td data-label="Сума">' + uah(o.total) + " · " + o.items.length + " шт.</td>" +
         '<td><button class="btn btn--ghost btn--sm" data-order="' + o.num + '" data-hover>Переглянути</button></td></tr>';
     }).join("");
-    return '<div class="cartpage__table-wrap"><table class="acc-orders cartpage__table"><thead><tr><th>Замовлення</th><th>Дата</th><th>Статус</th><th>Сума</th><th></th></tr></thead><tbody>' + trs + "</tbody></table></div>";
+    return '<div class="acc-orders-wrap"><table class="acc-orders"><thead><tr><th>Замовлення</th><th>Дата</th><th>Статус</th><th>Сума</th><th></th></tr></thead><tbody>' + trs + "</tbody></table></div>";
   }
   function accProfile() {
     var u = user || {};
