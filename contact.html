@@ -56,10 +56,11 @@
 
         <h2>Написати повідомлення</h2>
         <form class="cform" id="contactForm" novalidate>
-          <!-- Web3Forms: впишіть ключ замість WEB3FORMS_KEY, щоб слати з сайту -->
-          <input type="hidden" name="access_key" value="WEB3FORMS_KEY">
+          <!-- Web3Forms: публічний ключ, шле напряму з сайту (recipient налаштовується в дашборді Web3Forms) -->
+          <input type="hidden" name="access_key" value="873f277a-ff54-4b22-9f37-6aedfde2ce87">
           <input type="hidden" name="subject" value="Повідомлення з сайту Єгора Шатайла">
           <input type="hidden" name="from_name" value="Сайт Єгора Шатайла">
+          <input type="hidden" name="from_page" value="new.shatailo.com/contact">
 
           <div class="cform__row">
             <label class="cform__field">
