@@ -19,6 +19,34 @@
   var WOO_PID = { kosmichnyi: 39066, povitryane: 20812, sekunda: 3922, tymchasovi: 67 };
   function wooAddToCart(id) { return WOO_BASE + "/cart/?add-to-cart=" + (WOO_PID[id] || id); }
 
+  /* ---- Headless-кабінет через власний WP API (mu-plugin shatailo-api) ---- */
+  var WP_API = WOO_BASE + "/wp-json/shatailo/v1";
+  var TOKEN_KEY = "shatailo_token";
+  var token = HYBRID ? (localStorage.getItem(TOKEN_KEY) || "") : "";
+  var meData = null; // { user, orders, library } з /me
+  function apiLogin(email, password) {
+    return fetch(WP_API + "/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: password })
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+  function apiMe() {
+    return fetch(WP_API + "/me", { headers: { "Authorization": "Bearer " + token } })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+  function libFromMe() {
+    if (!meData || !meData.library) return [];
+    return meData.library.map(function (x) {
+      var p = PRODUCTS[x.slug] || {};
+      return { id: x.slug, title: x.title || p.title || x.slug, poster: p.poster || "", info: x.info || p.info || "", vimeo: x.vimeo || "" };
+    });
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   var PRODUCTS = {
     kosmichnyi: {
       id: "kosmichnyi", title: "Сольник «Космічний А#уй»", price: 500,
@@ -98,10 +126,14 @@
     saveOrders();
     return order;
   }
-  function getOrders() { return userOrders().slice(); }
-  function getOrder(num) { return userOrders().find(function (o) { return o.num === num; }); }
-  // бібліотека = унікальні сольники з усіх замовлень користувача
+  function getOrders() { return HYBRID ? (meData && meData.orders ? meData.orders : []) : userOrders().slice(); }
+  function getOrder(num) {
+    var list = HYBRID ? (meData && meData.orders ? meData.orders : []) : userOrders();
+    return list.find(function (o) { return String(o.num) === String(num); });
+  }
+  // бібліотека = куплені сольники (у гібриді — з /me; у моці — з локальних замовлень)
   function library() {
+    if (HYBRID) return libFromMe();
     var ids = {};
     userOrders().forEach(function (o) { o.items.forEach(function (it) { if (PRODUCTS[it.id]) ids[it.id] = true; }); });
     return Object.keys(ids).map(function (id) { return PRODUCTS[id]; });
@@ -153,14 +185,17 @@
   function uah(n) { return (n || 0).toLocaleString("uk-UA") + " ₴"; }
 
   /* ---------- авторизація (mock) ---------- */
-  function isLoggedIn() { return !!user; }
-  function getUser() { return user; }
+  function isLoggedIn() { return HYBRID ? !!token : !!user; }
+  function getUser() { return HYBRID ? (meData ? meData.user : null) : user; }
   function login(u) {
     user = u;
     saveUser();
     if (u && u.email && u.email.toLowerCase() === DEMO_EMAIL) seedDemoOrders();
   }
-  function logout() { user = null; saveUser(); }
+  function logout() {
+    if (HYBRID) { token = ""; meData = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+    else { user = null; saveUser(); }
+  }
 
   /* ---------- іконки ---------- */
   var ICON_USER = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><path d="M12 2C15.3137 2 18 4.68629 18 8C18 9.94598 17.0726 11.6742 15.6367 12.7705C16.6434 13.2154 17.571 13.8424 18.3643 14.6357C20.0521 16.3236 21 18.6131 21 21C21 21.5523 20.5523 22 20 22C19.4477 22 19 21.5523 19 21C19 19.1435 18.2629 17.3626 16.9502 16.0498C15.6374 14.7371 13.8565 14 12 14C10.1435 14 8.36256 14.7371 7.0498 16.0498C5.73705 17.3626 5 19.1435 5 21C5 21.5523 4.55228 22 4 22C3.44772 22 3 21.5523 3 21C3 18.6131 3.94791 16.3236 5.63574 14.6357C6.42882 13.8427 7.35593 13.2153 8.3623 12.7705C6.92681 11.6742 6 9.9457 6 8C6 4.68629 8.68629 2 12 2ZM12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4Z"/></svg>';
@@ -176,7 +211,7 @@
     var tools = document.createElement("div");
     tools.className = "header__tools";
     tools.innerHTML = HYBRID
-      ? '<a class="hicon" href="' + WOO_BASE + '/my-account/" aria-label="Кабінет" data-hover>' + ICON_USER + '</a>' +
+      ? '<button class="hicon" data-account type="button" aria-label="Кабінет" data-hover>' + ICON_USER + '</button>' +
         '<a class="hicon" href="' + WOO_BASE + '/cart/" aria-label="Кошик" data-hover>' + ICON_CART + '</a>'
       : '<button class="hicon" data-account type="button" aria-label="Акаунт" data-hover>' + ICON_USER + '</button>' +
         '<button class="hicon" data-cart-toggle type="button" aria-label="Кошик" data-hover>' + ICON_CART +
@@ -289,17 +324,19 @@
         '<label class="auth-field"><span>Email</span><input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>' +
         '<label class="auth-field"><span>Пароль</span><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></label>' +
         '<button class="btn btn--solid auth-submit" type="submit" data-hover>Увійти</button>' +
-        '<p class="auth-note">Це концепт — авторизація демонстраційна, дані нікуди не йдуть.</p>' +
+        '<p class="auth-status" data-auth-status></p>' +
+        '<p class="auth-note">Вхід із вашим акаунтом shatailo.com — email і пароль ті самі.</p>' +
       '</form>';
   }
   function authViewAccount() {
-    var u = user || {};
+    var u = getUser() || {};
+    var nm = u.displayName || u.firstName || u.name || "Користувач";
     return '' +
       '<h3 class="authmodal__title">Акаунт</h3>' +
       '<div class="auth-account">' +
-        '<div class="auth-account__avatar">' + ((u.name || "?").charAt(0).toUpperCase()) + '</div>' +
-        '<div><p class="auth-account__name">' + (u.name || "Користувач") + '</p>' +
-        '<p class="auth-account__email">' + (u.email || "") + '</p></div>' +
+        '<div class="auth-account__avatar">' + esc(nm.charAt(0).toUpperCase()) + '</div>' +
+        '<div><p class="auth-account__name">' + esc(nm) + '</p>' +
+        '<p class="auth-account__email">' + esc(u.email || "") + '</p></div>' +
       '</div>' +
       '<a class="btn btn--ghost btn--sm auth-cabinet-link" data-hover href="/account">Особистий кабінет</a>' +
       '<button class="btn btn--solid btn--sm" data-logout type="button" data-hover>Вийти</button>';
@@ -447,7 +484,10 @@
     var dec = closest("[data-qty-dec]"); if (dec) { var id2 = dec.getAttribute("data-qty-dec"); setQty(id2, (cart.find(function(c){return c.id===id2;})||{}).qty - 1); return; }
     var rm = closest("[data-rm]"); if (rm) { removeFromCart(rm.getAttribute("data-rm")); return; }
 
-    if (closest("[data-google]")) { login({ name: "Гість", lastName: "", displayName: "Гість Google", email: "guest@gmail.com", provider: "google" }); window.location.assign("/account"); return; }
+    if (closest("[data-google]")) {
+      if (HYBRID) { var gs = document.querySelector("#authModal [data-auth-status]"); if (gs) { gs.textContent = "Вхід через Google — скоро."; gs.className = "auth-status"; } return; }
+      login({ name: "Гість", lastName: "", displayName: "Гість Google", email: "guest@gmail.com", provider: "google" }); window.location.assign("/account"); return;
+    }
 
     /* кабінет */
     var play = closest("[data-play]"); if (play) { e.preventDefault(); openPlayer(play.getAttribute("data-play")); return; }
@@ -466,13 +506,31 @@
     if (form.matches("[data-auth-form]")) {
       e.preventDefault();
       var email = form.email.value.trim();
-      if (email.toLowerCase() === DEMO_EMAIL) {
-        login({ name: "Демо", lastName: "Користувач", displayName: "Демо", email: DEMO_EMAIL, provider: "email" });
-      } else {
+      if (!HYBRID) {
         var nm = email.split("@")[0] || "Користувач";
         login({ name: nm, lastName: "", displayName: nm, email: email, provider: "email" });
+        window.location.assign("/account");
+        return;
       }
-      window.location.assign("/account");
+      var pass = form.password.value;
+      var statusEl = document.querySelector("#authModal [data-auth-status]");
+      var sbtn = form.querySelector("[type=submit]");
+      if (statusEl) { statusEl.textContent = "Входимо…"; statusEl.className = "auth-status"; }
+      if (sbtn) sbtn.disabled = true;
+      apiLogin(email, pass).then(function (res) {
+        if (sbtn) sbtn.disabled = false;
+        if (res.ok && res.data && res.data.token) {
+          token = res.data.token; meData = null;
+          try { localStorage.setItem(TOKEN_KEY, token); } catch (e2) {}
+          window.location.assign("/account");
+        } else {
+          var msg = (res.data && res.data.message) || "Не вдалося увійти.";
+          if (statusEl) { statusEl.textContent = msg; statusEl.className = "auth-status is-err"; }
+        }
+      }).catch(function () {
+        if (sbtn) sbtn.disabled = false;
+        if (statusEl) { statusEl.textContent = "Помилка мережі. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+      });
       return;
     }
     if (form.matches("[data-checkout-form]")) {
@@ -517,19 +575,32 @@
       '  <footer class="playermodal__foot">' +
       '    <p class="playermodal__meta" data-player-meta></p>' +
       '    <p class="playermodal__desc" data-player-desc></p>' +
-      '    <p class="playermodal__note">Це концепт — показано фрагмент. Повний сольник доступний на shatailo.com.</p>' +
+      '    <p class="playermodal__note" data-player-note></p>' +
       "  </footer></div>";
     document.body.appendChild(el);
   }
   function openPlayer(id) {
-    var p = PRODUCTS[id]; if (!p) return;
+    var p = PRODUCTS[id] || {};
+    var vimeo = "";
+    if (meData && meData.library) {
+      var f = meData.library.filter(function (x) { return x.slug === id; })[0];
+      if (f) vimeo = f.vimeo;
+    }
     injectPlayer();
     var m = document.getElementById("playerModal");
     m.querySelector("[data-player-title]").textContent = (p.title || "Перегляд").replace("Сольник ", "");
     m.querySelector("[data-player-meta]").textContent = p.meta || "";
     m.querySelector("[data-player-desc]").textContent = p.desc || "";
-    var startParam = p.start ? "&start=" + p.start : "";
-    m.querySelector("[data-player-frame]").src = "https://www.youtube-nocookie.com/embed/" + p.trailer + "?autoplay=1&rel=0" + startParam;
+    var note = m.querySelector("[data-player-note]");
+    if (HYBRID && vimeo) {
+      // повне відео (Vimeo). Гратиме, щойно домен new.shatailo.com дозволять у налаштуваннях Vimeo.
+      m.querySelector("[data-player-frame]").src = "https://player.vimeo.com/video/" + vimeo + "?title=0&byline=0&portrait=0&badge=0&autoplay=1";
+      if (note) note.textContent = "";
+    } else {
+      var startParam = p.start ? "&start=" + p.start : "";
+      m.querySelector("[data-player-frame]").src = "https://www.youtube-nocookie.com/embed/" + (p.trailer || "") + "?autoplay=1&rel=0" + startParam;
+      if (note) note.textContent = "Показано фрагмент.";
+    }
     m.classList.add("is-open"); m.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden";
   }
   function closePlayer() {
@@ -575,27 +646,28 @@
     }
     return '<div class="acc-lib">' + lib.map(function (p) {
       return '<article class="acc-lib__card">' +
-        '<div class="acc-lib__poster"><img src="' + p.poster + '" alt="">' +
-          '<button class="acc-lib__play" data-play="' + p.id + '" aria-label="Дивитись"><span>▶</span></button></div>' +
-        '<div class="acc-lib__body"><h3>' + p.title.replace("Сольник ", "") + "</h3>" +
-          '<p class="acc-lib__info">' + (p.info || "") + "</p>" +
-          '<button class="btn btn--solid btn--sm" data-play="' + p.id + '" data-hover>Дивитись</button></div></article>';
+        '<div class="acc-lib__poster"><img src="' + esc(p.poster) + '" alt="">' +
+          '<button class="acc-lib__play" data-play="' + esc(p.id) + '" aria-label="Дивитись"><span>▶</span></button></div>' +
+        '<div class="acc-lib__body"><h3>' + esc((p.title || "").replace("Сольник ", "")) + "</h3>" +
+          '<p class="acc-lib__info">' + esc(p.info || "") + "</p>" +
+          '<button class="btn btn--solid btn--sm" data-play="' + esc(p.id) + '" data-hover>Дивитись</button></div></article>';
     }).join("") + "</div>";
   }
   function accOrders() {
     if (accountOrderNum) {
       var o = getOrder(accountOrderNum);
       if (!o) { accountOrderNum = null; return accOrders(); }
+      var uu = getUser() || {};
       var rows = o.items.map(function (it) {
-        return "<tr><td>" + it.title + ' <span class="co-x">× ' + it.qty + "</span></td><td>" + uah(it.price * it.qty) + "</td></tr>";
+        return "<tr><td>" + esc(it.title) + ' <span class="co-x">× ' + it.qty + "</span></td><td></td></tr>";
       }).join("");
       return '<button class="acc-back" data-order-back data-hover>← Усі замовлення</button>' +
-        '<h2 class="acc-h">Замовлення №' + o.num + "</h2>" +
-        '<p class="acc-sub">' + o.date + " · " + o.status + "</p>" +
+        '<h2 class="acc-h">Замовлення №' + esc(o.num) + "</h2>" +
+        '<p class="acc-sub">' + esc(o.date) + " · " + esc(o.status) + "</p>" +
         '<table class="checkout__summary"><tbody>' + rows +
         '<tr class="checkout__summary-grand"><td>Загалом</td><td>' + uah(o.total) + "</td></tr></tbody></table>" +
         '<h3 class="acc-h acc-h--sm">Платіжні дані</h3>' +
-        '<p class="acc-bill">' + (o.name || "—") + "<br>" + (o.email || "") + "</p>";
+        '<p class="acc-bill">' + esc(uu.displayName || "—") + "<br>" + esc(uu.email || "") + "</p>";
     }
     var os = getOrders();
     if (!os.length) {
@@ -604,15 +676,28 @@
     }
     var trs = os.map(function (o) {
       return "<tr>" +
-        '<td data-label="Замовлення">№' + o.num + "</td>" +
-        '<td data-label="Дата">' + o.date + "</td>" +
-        '<td data-label="Статус"><span class="acc-status">' + o.status + "</span></td>" +
+        '<td data-label="Замовлення">№' + esc(o.num) + "</td>" +
+        '<td data-label="Дата">' + esc(o.date) + "</td>" +
+        '<td data-label="Статус"><span class="acc-status">' + esc(o.status) + "</span></td>" +
         '<td data-label="Сума">' + uah(o.total) + " · " + o.items.length + " шт.</td>" +
-        '<td><button class="btn btn--ghost btn--sm" data-order="' + o.num + '" data-hover>Переглянути</button></td></tr>';
+        '<td><button class="btn btn--ghost btn--sm" data-order="' + esc(o.num) + '" data-hover>Переглянути</button></td></tr>';
     }).join("");
     return '<div class="acc-orders-wrap"><table class="acc-orders"><thead><tr><th>Замовлення</th><th>Дата</th><th>Статус</th><th>Сума</th><th></th></tr></thead><tbody>' + trs + "</tbody></table></div>";
   }
   function accProfile() {
+    if (!HYBRID) return accProfileMock();
+    var u = getUser() || {};
+    return '<div class="acc-profile">' +
+      '<div class="acc-profile__row">' +
+        '<label class="auth-field"><span>Ім’я</span><input type="text" value="' + esc(u.firstName || "") + '" disabled></label>' +
+        '<label class="auth-field"><span>Прізвище</span><input type="text" value="' + esc(u.lastName || "") + '" disabled></label>' +
+      "</div>" +
+      '<label class="auth-field"><span>Відображуване ім’я</span><input type="text" value="' + esc(u.displayName || "") + '" disabled></label>' +
+      '<label class="auth-field"><span>E-mail адреса</span><input type="email" value="' + esc(u.email || "") + '" disabled></label>' +
+      '<p class="acc-hint">Щоб змінити дані чи пароль — <a href="' + WOO_BASE + '/my-account/edit-account/" target="_blank" rel="noopener">керуйте акаунтом на shatailo.com</a>.</p>' +
+      "</div>";
+  }
+  function accProfileMock() {
     var u = user || {};
     return '<form class="acc-profile" data-profile-form>' +
       '<div class="acc-profile__row">' +
@@ -621,11 +706,6 @@
       "</div>" +
       '<label class="auth-field"><span>Відображуване ім’я</span><input type="text" name="displayName" value="' + (u.displayName || u.name || "") + '"><small class="acc-hint">Так ваше ім’я відображатиметься в кабінеті.</small></label>' +
       '<label class="auth-field"><span>E-mail адреса</span><input type="email" name="email" value="' + (u.email || "") + '"></label>' +
-      '<fieldset class="acc-pass"><legend>Зміна пароля</legend>' +
-        '<label class="auth-field"><span>Поточний пароль</span><input type="password" name="curpass" placeholder="залиште порожнім, щоб не змінювати"></label>' +
-        '<label class="auth-field"><span>Новий пароль</span><input type="password" name="newpass"></label>' +
-        '<label class="auth-field"><span>Повторіть новий пароль</span><input type="password" name="newpass2"></label>' +
-      "</fieldset>" +
       '<div class="acc-profile__save"><button class="btn btn--solid" type="submit" data-hover>Зберегти зміни</button>' +
       '<span class="acc-saved" data-profile-saved hidden>✓ Збережено</span></div></form>';
   }
@@ -637,14 +717,24 @@
         '<button class="btn btn--solid" data-account-open type="button" data-hover>Увійти</button></div>';
       return;
     }
-    var u = user || {};
+    if (HYBRID && !meData) {
+      root.innerHTML = '<div class="acc-empty"><p>Завантаження кабінету…</p></div>';
+      apiMe().then(function (res) {
+        if (res.ok && res.data && res.data.user) { meData = res.data; renderAccountPage(); }
+        else { logout(); renderAccountPage(); } // токен недійсний/протермінований → форма входу
+      }).catch(function () {
+        root.innerHTML = '<div class="acc-empty"><p>Не вдалося завантажити кабінет. Оновіть сторінку.</p></div>';
+      });
+      return;
+    }
+    var u = getUser() || {};
     var tab = accountTab();
     var content = tab === "orders" ? accOrders() : (tab === "profile" ? accProfile() : accLibrary());
     root.innerHTML =
       '<div class="acc-head">' +
         '<p class="acc-greet">Вітаємо 👋</p>' +
         '<div class="acc-head__row">' +
-          '<span class="acc-welcome__name">' + (u.displayName || u.name || "друже") + "</span>" +
+          '<span class="acc-welcome__name">' + esc(u.displayName || u.firstName || u.name || "друже") + "</span>" +
           '<button class="acc-logout" data-account-logout type="button" data-hover>Вийти</button>' +
         "</div>" +
       "</div>" +
@@ -666,13 +756,12 @@
 
   function init() {
     if (HYBRID) {
-      // мок-сторінки нового фронту → на живий WooCommerce
+      // кошик/оформлення лишаються на Woo; /account рендеримо самі (headless-кабінет нижче)
       if (document.querySelector("[data-cart-page]")) return void location.replace(WOO_BASE + "/cart/");
       if (document.querySelector("[data-checkout-page]")) return void location.replace(WOO_BASE + "/checkout/");
-      if (document.querySelector("[data-account-page]")) return void location.replace(WOO_BASE + "/my-account/");
     }
     injectHeaderTools();
-    if (!HYBRID) { injectMiniCart(); injectAuthModal(); }
+    if (HYBRID) injectAuthModal(); else { injectMiniCart(); injectAuthModal(); }
 
     document.addEventListener("click", onClick);
     document.addEventListener("submit", onSubmit);
