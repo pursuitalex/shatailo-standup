@@ -19,3 +19,9 @@ desktop.ini
 _analysis/
 
 .vercel
+
+# WordPress backup dump — містить ПІІ покупців + хеші паролів. НІКОЛИ не комітити.
+# (провідний '!' екранується бекслешем, інакше git трактує його як заперечення)
+\!!!backup/
+*.sql
+installer.php
