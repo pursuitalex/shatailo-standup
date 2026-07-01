@@ -1,0 +1,6 @@
+# Серверна частина (WordPress mu-plugin) — не деплоїмо на статику Vercel
+backend/
+# Бекапи/staging (містять ПІІ) — і так у .gitignore, дублюємо про всяк
+!!!backup/
+staging/
+docs/
