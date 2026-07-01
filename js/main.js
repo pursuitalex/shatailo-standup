@@ -343,15 +343,17 @@ document.querySelectorAll("[data-count]").forEach((el) => {
   });
 });
 
-/* ---------- штамп СОЛД АУТ ---------- */
-gsap.from(".tour__stamp", {
-  scale: 2.4,
-  opacity: 0,
-  rotate: 18,
-  duration: 0.7,
-  ease: "back.out(2.5)",
-  scrollTrigger: { trigger: ".tour__stamp", start: "top 85%" },
-});
+/* ---------- штамп СОЛД АУТ (лише якщо секція туру присутня) ---------- */
+if (document.querySelector(".tour__stamp")) {
+  gsap.from(".tour__stamp", {
+    scale: 2.4,
+    opacity: 0,
+    rotate: 18,
+    duration: 0.7,
+    ease: "back.out(2.5)",
+    scrollTrigger: { trigger: ".tour__stamp", start: "top 85%" },
+  });
+}
 
 /* ---------- магнітні кнопки ---------- */
 if (isDesktop && !prefersReduced) {

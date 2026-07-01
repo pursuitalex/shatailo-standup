@@ -1,0 +1,53 @@
+<!--
+  АРХІВ: секція «Стендап-тур / Живі виступи» з головної сторінки.
+  Приховано (закоментовано) в index.html на прохання. Щоб повернути:
+  1) розкоментуй блок у index.html (секція + пункт меню <a href="#tour">Тур</a>);
+  2) або встав цей markup назад.
+  CSS для неї (.tour, .tour__list, .tour__row, .tour__date, .tour__city, .tour__venue,
+  .tour__stamp, .tour__buy, .tour__lead, .tour__actions) ЛИШАЄТЬСЯ в css/style.css — не видаляли.
+  Також є окрема сторінка /tour (tour.html) — вона теж лишилась.
+-->
+
+<section class="tour" id="tour">
+  <div class="container">
+    <p class="section-index reveal">03 — Стендап-тур</p>
+    <h2 class="section-title">
+      <span class="reveal-line"><span>ЖИВІ</span></span>
+      <span class="reveal-line"><span class="outline">ВИСТУПИ</span></span>
+    </h2>
+
+    <p class="tour__lead reveal">Тур із новим сольником «Космічний А#уй». Беріть квитки, поки є.</p>
+
+    <ul class="tour__list">
+      <li class="tour__row reveal" data-soldout>
+        <span class="tour__date">12 вересня 2026</span>
+        <span class="tour__city">Київ <i class="tour__venue">Палац «Україна»</i></span>
+        <span class="tour__stamp" aria-label="Солд аут">СОЛД АУТ</span>
+      </li>
+      <li class="tour__row reveal">
+        <span class="tour__date">20 вересня 2026</span>
+        <span class="tour__city">Львів <i class="tour__venue">Театр ім. Заньковецької</i></span>
+        <a class="btn btn--solid btn--sm tour__buy" data-hover target="_blank" rel="noopener"
+           href="https://shatailo.com/%d1%81%d1%82%d0%b5%d0%bd%d0%b4%d0%b0%d0%bf-%d1%82%d1%83%d1%80/">Купити квитки</a>
+      </li>
+      <li class="tour__row reveal">
+        <span class="tour__date">4 жовтня 2026</span>
+        <span class="tour__city">Дніпро <i class="tour__venue">Театр драми та комедії</i></span>
+        <a class="btn btn--solid btn--sm tour__buy" data-hover target="_blank" rel="noopener"
+           href="https://shatailo.com/%d1%81%d1%82%d0%b5%d0%bd%d0%b4%d0%b0%d0%bf-%d1%82%d1%83%d1%80/">Купити квитки</a>
+      </li>
+      <li class="tour__row reveal">
+        <span class="tour__date">18 жовтня 2026</span>
+        <span class="tour__city">Одеса <i class="tour__venue">Філармонія</i></span>
+        <a class="btn btn--solid btn--sm tour__buy" data-hover target="_blank" rel="noopener"
+           href="https://shatailo.com/%d1%81%d1%82%d0%b5%d0%bd%d0%b4%d0%b0%d0%bf-%d1%82%d1%83%d1%80/">Купити квитки</a>
+      </li>
+    </ul>
+
+    <div class="tour__actions reveal">
+      <a class="btn btn--white" data-hover data-magnetic target="_blank" rel="noopener"
+         href="https://www.instagram.com/egorshatailo/">Анонси в Instagram</a>
+      <a class="btn btn--ghost" data-hover data-magnetic href="/tour">Повний список</a>
+    </div>
+  </div>
+</section>

@@ -12,6 +12,13 @@
   var USER_KEY = "shatailo_user";
   var ORDERS_KEY = "shatailo_orders";
 
+  /* ---- Крок 1: ГІБРИД — кошик/оплата/кабінет на живому WooCommerce (shatailo.com).
+     Мок-магазин лишається в коді нижче; вимикається одним прапорцем HYBRID=false. ---- */
+  var HYBRID = true;
+  var WOO_BASE = "https://shatailo.com";
+  var WOO_PID = { kosmichnyi: 39066, povitryane: 20812, sekunda: 3922, tymchasovi: 67 };
+  function wooAddToCart(id) { return WOO_BASE + "/cart/?add-to-cart=" + (WOO_PID[id] || id); }
+
   var PRODUCTS = {
     kosmichnyi: {
       id: "kosmichnyi", title: "Сольник «Космічний А#уй»", price: 500,
@@ -168,10 +175,12 @@
     if (!header || header.querySelector(".header__tools")) return;
     var tools = document.createElement("div");
     tools.className = "header__tools";
-    tools.innerHTML =
-      '<button class="hicon" data-account type="button" aria-label="Акаунт" data-hover>' + ICON_USER + '</button>' +
-      '<button class="hicon" data-cart-toggle type="button" aria-label="Кошик" data-hover>' + ICON_CART +
-      '<span class="hicon__badge" data-cart-count hidden>0</span></button>';
+    tools.innerHTML = HYBRID
+      ? '<a class="hicon" href="' + WOO_BASE + '/my-account/" aria-label="Кабінет" data-hover>' + ICON_USER + '</a>' +
+        '<a class="hicon" href="' + WOO_BASE + '/cart/" aria-label="Кошик" data-hover>' + ICON_CART + '</a>'
+      : '<button class="hicon" data-account type="button" aria-label="Акаунт" data-hover>' + ICON_USER + '</button>' +
+        '<button class="hicon" data-cart-toggle type="button" aria-label="Кошик" data-hover>' + ICON_CART +
+        '<span class="hicon__badge" data-cart-count hidden>0</span></button>';
     // якщо є правий блок хедера — іконки зліва від кнопки; інакше — в кінець хедера
     var right = header.querySelector(".header__right");
     if (right) right.insertBefore(tools, right.firstChild);
@@ -430,7 +439,9 @@
     if (closest("[data-auth-close]")) { closeAuth(); return; }
 
     var add = closest("[data-add-to-cart]");
-    if (add) { e.preventDefault(); addToCart(add.getAttribute("data-add-to-cart")); openCart(); return; }
+    if (add) { e.preventDefault();
+      if (HYBRID) { window.location.href = wooAddToCart(add.getAttribute("data-add-to-cart")); return; }
+      addToCart(add.getAttribute("data-add-to-cart")); openCart(); return; }
 
     var inc = closest("[data-qty-inc]"); if (inc) { var id = inc.getAttribute("data-qty-inc"); setQty(id, (cart.find(function(c){return c.id===id;})||{}).qty + 1); return; }
     var dec = closest("[data-qty-dec]"); if (dec) { var id2 = dec.getAttribute("data-qty-dec"); setQty(id2, (cart.find(function(c){return c.id===id2;})||{}).qty - 1); return; }
@@ -654,9 +665,14 @@
   }
 
   function init() {
+    if (HYBRID) {
+      // мок-сторінки нового фронту → на живий WooCommerce
+      if (document.querySelector("[data-cart-page]")) return void location.replace(WOO_BASE + "/cart/");
+      if (document.querySelector("[data-checkout-page]")) return void location.replace(WOO_BASE + "/checkout/");
+      if (document.querySelector("[data-account-page]")) return void location.replace(WOO_BASE + "/my-account/");
+    }
     injectHeaderTools();
-    injectMiniCart();
-    injectAuthModal();
+    if (!HYBRID) { injectMiniCart(); injectAuthModal(); }
 
     document.addEventListener("click", onClick);
     document.addEventListener("submit", onSubmit);

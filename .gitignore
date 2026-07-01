@@ -25,3 +25,7 @@ _analysis/
 \!!!backup/
 *.sql
 installer.php
+
+# локальний staging-клон: розпакований WP + скопійований архів (містить ПІІ) — не комітити
+staging/www/
+staging/**/*.zip

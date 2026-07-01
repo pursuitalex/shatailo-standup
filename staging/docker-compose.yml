@@ -1,0 +1,32 @@
+name: shatailo-staging
+
+# Локальний staging-клон живого сайту з Duplicator-бекапу.
+# ЛИШЕ ДЛЯ ЛОКАЛЬНОГО АНАЛІЗУ/ТЕСТІВ. Містить ПІІ покупців — не публікувати, не деплоїти.
+
+services:
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: shatailo
+      MARIADB_USER: shatailo
+      MARIADB_PASSWORD: shatailo
+    command: ["--max_allowed_packet=256M", "--innodb-buffer-pool-size=512M"]
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3307:3306"   # доступ ззовні: localhost:3307 (щоб не конфліктувати з локальним MySQL)
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    volumes:
+      - ./www:/var/www/html   # сюди кладемо installer.php + архів; сюди ж розпакується WP
+    ports:
+      - "8080:80"
+
+volumes:
+  db_data:
