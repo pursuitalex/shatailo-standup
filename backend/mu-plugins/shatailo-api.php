@@ -117,19 +117,27 @@ function shatailo_orders($uid) {
   return $out;
 }
 
-/* ---- Бібліотека: сольники, до яких у користувача активний доступ ---- */
+/* ---- Бібліотека: сольники за фактом покупки ----
+   Політика «купив = дивишся необмежено»: враховуємо ВСІ членства КРІМ скасованих
+   (wcm-cancelled = повернення коштів). Прострочені (wcm-expired) — легасі, доступ лишаємо. */
 function shatailo_library($uid) {
   $lib = array();
-  if (!function_exists('wc_memberships_is_user_active_member')) return $lib;
-  foreach (shatailo_solnyky() as $plan_id => $s) {
-    if (wc_memberships_is_user_active_member($uid, $plan_id)) {
-      $lib[] = array(
-        'slug'  => $s['slug'],
-        'title' => $s['title'],
-        'info'  => $s['info'],
-        'vimeo' => $s['vimeo'],
-      );
-    }
+  $plans = shatailo_solnyky();
+  $q = new WP_Query(array(
+    'post_type'      => 'wc_user_membership',
+    'author'         => $uid,
+    'post_status'    => array('wcm-active', 'wcm-expired', 'wcm-paused', 'wcm-pending', 'wcm-delayed', 'wcm-complimentary', 'wcm-free_trial'),
+    'posts_per_page' => -1,
+    'fields'         => 'ids',
+    'no_found_rows'  => true,
+  ));
+  $seen = array();
+  foreach ($q->posts as $mid) {
+    $plan_id = (int) get_post_field('post_parent', $mid);
+    if (!isset($plans[$plan_id]) || isset($seen[$plan_id])) continue;
+    $seen[$plan_id] = true;
+    $s = $plans[$plan_id];
+    $lib[] = array('slug' => $s['slug'], 'title' => $s['title'], 'info' => $s['info'], 'vimeo' => $s['vimeo']);
   }
   return $lib;
 }
