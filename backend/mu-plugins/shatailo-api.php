@@ -154,11 +154,11 @@ function shatailo_library($uid) {
 }
 
 /* ---- Проста заслінка від брутфорсу логіну ---- */
-function shatailo_login_blocked($ip) {
-  return ((int) get_transient('shatailo_lf_' . md5($ip))) >= 8;
+function shatailo_login_blocked($ip, $bucket = 'lf') {
+  return ((int) get_transient('shatailo_' . $bucket . '_' . md5($ip))) >= 8;
 }
-function shatailo_login_fail($ip) {
-  $k = 'shatailo_lf_' . md5($ip);
+function shatailo_login_fail($ip, $bucket = 'lf') {
+  $k = 'shatailo_' . $bucket . '_' . md5($ip);
   set_transient($k, ((int) get_transient($k)) + 1, 15 * MINUTE_IN_SECONDS);
 }
 
@@ -282,13 +282,13 @@ function shatailo_route_google_login($req) {
   if (!$client_id) return new WP_Error('not_configured', 'Google-логін ще не налаштовано.', array('status' => 503));
 
   $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
-  if (shatailo_login_blocked($ip)) {
+  if (shatailo_login_blocked($ip, 'glf')) {
     return new WP_Error('too_many', 'Забагато спроб. Спробуйте за 15 хв.', array('status' => 429));
   }
 
   $v = shatailo_google_verify($req);
   if (is_wp_error($v)) {
-    if (in_array($v->get_error_code(), array('bad_token', 'bad_aud', 'bad_iss', 'token_expired'), true)) shatailo_login_fail($ip);
+    if (in_array($v->get_error_code(), array('bad_token', 'bad_aud', 'bad_iss', 'token_expired'), true)) shatailo_login_fail($ip, 'glf');
     return $v;
   }
   $email = $v['email']; $verified = $v['verified']; $info = $v['profile'];
@@ -312,7 +312,7 @@ function shatailo_route_google_login($req) {
     $user = get_user_by('id', $uid);
   }
 
-  delete_transient('shatailo_lf_' . md5($ip));
+  delete_transient('shatailo_glf_' . md5($ip));
   return array(
     'token' => shatailo_make_token($user->ID),
     'user'  => shatailo_user_public($user->ID),
