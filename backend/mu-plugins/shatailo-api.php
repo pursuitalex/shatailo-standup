@@ -37,7 +37,7 @@ function shatailo_solnyky() {
    2) autocreate — політика для входу з Google без існуючого акаунта:
       false = ВІДМОВИТИ (варіант A, рекомендовано); true = СТВОРИТИ клієнта (варіант B). */
 function shatailo_google_client_id() {
-  return '';
+  return '311300247177-t7faj7frsr2pfcgva2cisa0mikgpf9jk.apps.googleusercontent.com';
 }
 function shatailo_google_autocreate() {
   return false;

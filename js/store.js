@@ -27,7 +27,7 @@
 
   /* ---- Google-логін (GIS). Вставити OAuth Client ID (…apps.googleusercontent.com).
      Поки порожній рядок — кнопка Google показує «скоро», решта входу працює як є. ---- */
-  var GOOGLE_CLIENT_ID = "";
+  var GOOGLE_CLIENT_ID = "311300247177-t7faj7frsr2pfcgva2cisa0mikgpf9jk.apps.googleusercontent.com";
   function apiLogin(email, password) {
     return fetch(WP_API + "/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
