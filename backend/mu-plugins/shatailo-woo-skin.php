@@ -153,6 +153,41 @@ body.woocommerce-account .woocommerce-MyAccount-navigation li {
 }
 body.woocommerce-account .woocommerce-MyAccount-navigation li a { color: #f4f2ec !important; }
 body.woocommerce-account .woocommerce-MyAccount-navigation li.is-active a { color: #f2ff00 !important; }
+
+/* --- checkout: платіжні методи та опис (був світлий) --- */
+body.woocommerce-checkout #payment { background: #0c0c0c !important; }
+body.woocommerce-checkout #payment ul.payment_methods,
+body.woocommerce-checkout #payment ul.payment_methods li { background: transparent !important; }
+body.woocommerce-checkout #payment div.payment_box,
+body.woocommerce-checkout #payment .payment_box {
+  background: #141414 !important;
+  color: #f4f2ec !important;
+}
+body.woocommerce-checkout #payment div.payment_box::before {
+  border-bottom-color: #141414 !important;
+}
+
+/* --- checkout: кнопка «Підтвердити замовлення» (куленепробивно) --- */
+body.woocommerce-page #payment #place_order,
+body.woocommerce-checkout #order_review #place_order,
+body.woocommerce-page button#place_order.button.alt {
+  background: #f2ff00 !important;
+  background-color: #f2ff00 !important;
+  color: #0a0a0a !important;
+  -webkit-text-fill-color: #0a0a0a !important;
+  border: 1px solid #f2ff00 !important;
+  opacity: 1 !important;
+}
+body.woocommerce-page #payment #place_order:hover,
+body.woocommerce-checkout #order_review #place_order:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #f2ff00 !important;
+  -webkit-text-fill-color: #f2ff00 !important;
+}
+
+/* --- оверлей завантаження WooCommerce (був білий → робимо темним) --- */
+body.woocommerce-page .blockUI.blockOverlay { background: #060606 !important; }
 CSS;
 
   wp_add_inline_style('shatailo-woo-skin', $css);
