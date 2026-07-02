@@ -397,7 +397,6 @@
         '<label class="auth-field"><span>Пароль</span><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></label>' +
         '<button class="btn btn--solid auth-submit" type="submit" data-hover>Увійти</button>' +
         '<p class="auth-status" data-auth-status></p>' +
-        '<p class="auth-note">Вхід із вашим акаунтом shatailo.com — email і пароль ті самі.</p>' +
       '</form>';
   }
   function authViewAccount() {
@@ -515,6 +514,8 @@
     var root = document.querySelector("[data-checkout-page]");
     if (!root) return;
     root.dataset.done = "1";
+    var hero = document.querySelector(".legal__hero");
+    if (hero) hero.style.display = "none"; // на екрані успіху ховаємо шапку «Оформлення», щоб контент піднявся
     var num = order && order.num ? order.num : "";
     var email = (order && order.email) || (user && user.email) || "";
     root.innerHTML =
@@ -528,7 +529,6 @@
       '    <a class="btn btn--solid" data-hover href="/account">Перейти в кабінет</a>' +
       '    <a class="btn btn--ghost" data-hover href="/">На головну</a>' +
       '  </div>' +
-      '  <p class="checkout__done-note">Концепт — оплата демонстраційна.</p>' +
       '</div>';
     // прокрутити нагору, щоб одразу побачити підтвердження (а не лишитись унизу, де була кнопка)
     window.scrollTo(0, 0);
