@@ -32,6 +32,17 @@ function shatailo_solnyky() {
   );
 }
 
+/* ---- Google-логін: налаштування ----
+   1) client_id — вставити OAuth Client ID (…apps.googleusercontent.com). Поки '' — роут вимкнено (503).
+   2) autocreate — політика для входу з Google без існуючого акаунта:
+      false = ВІДМОВИТИ (варіант A, рекомендовано); true = СТВОРИТИ клієнта (варіант B). */
+function shatailo_google_client_id() {
+  return '';
+}
+function shatailo_google_autocreate() {
+  return false;
+}
+
 /* ---- CORS для REST ---- */
 add_action('rest_api_init', function () {
   add_filter('rest_pre_serve_request', function ($served) {
@@ -159,6 +170,9 @@ add_action('rest_api_init', function () {
   register_rest_route('shatailo/v1', '/me', array(
     'methods' => 'GET', 'callback' => 'shatailo_route_me', 'permission_callback' => '__return_true',
   ));
+  register_rest_route('shatailo/v1', '/google-login', array(
+    'methods' => 'POST', 'callback' => 'shatailo_route_google_login', 'permission_callback' => '__return_true',
+  ));
 });
 
 function shatailo_route_login($req) {
@@ -190,5 +204,66 @@ function shatailo_route_me($req) {
     'user'    => shatailo_user_public($uid),
     'orders'  => shatailo_orders($uid),
     'library' => shatailo_library($uid),
+  );
+}
+
+/* ---- Google-логін ----
+   Фронт (GIS) присилає ID-token у полі `credential`. Валідуємо через офіційний
+   ендпоінт Google tokeninfo (без сторонніх бібліотек — для нашого обсігу достатньо),
+   перевіряємо aud/iss/exp/email_verified, далі шукаємо WP-користувача за email. */
+function shatailo_route_google_login($req) {
+  $client_id = shatailo_google_client_id();
+  if (!$client_id) return new WP_Error('not_configured', 'Google-логін ще не налаштовано.', array('status' => 503));
+
+  $cred = (string) $req->get_param('credential');
+  if (!$cred) return new WP_Error('bad_request', 'Немає токена Google.', array('status' => 400));
+
+  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
+  if (shatailo_login_blocked($ip)) {
+    return new WP_Error('too_many', 'Забагато спроб. Спробуйте за 15 хв.', array('status' => 429));
+  }
+
+  $resp = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($cred), array('timeout' => 10));
+  if (is_wp_error($resp)) return new WP_Error('google_unreachable', 'Не вдалося звʼязатися з Google.', array('status' => 502));
+  $code = (int) wp_remote_retrieve_response_code($resp);
+  $info = json_decode(wp_remote_retrieve_body($resp), true);
+  if ($code !== 200 || !is_array($info) || isset($info['error'])) {
+    shatailo_login_fail($ip);
+    return new WP_Error('bad_token', 'Недійсний токен Google.', array('status' => 401));
+  }
+
+  $aud      = isset($info['aud']) ? (string) $info['aud'] : '';
+  $iss      = isset($info['iss']) ? (string) $info['iss'] : '';
+  $exp      = isset($info['exp']) ? (int) $info['exp'] : 0;
+  $email    = isset($info['email']) ? sanitize_email($info['email']) : '';
+  $verified = isset($info['email_verified']) && ($info['email_verified'] === true || $info['email_verified'] === 'true');
+
+  if (!hash_equals($client_id, $aud)) return new WP_Error('bad_aud', 'Токен видано для іншого застосунку.', array('status' => 401));
+  if ($iss !== 'accounts.google.com' && $iss !== 'https://accounts.google.com') return new WP_Error('bad_iss', 'Невірний видавець токена.', array('status' => 401));
+  if ($exp < time()) return new WP_Error('token_expired', 'Токен Google протермінований.', array('status' => 401));
+  if (!$email || !$verified) return new WP_Error('no_email', 'Google не підтвердив email.', array('status' => 401));
+
+  $user = get_user_by('email', $email);
+  if (!$user) {
+    if (!shatailo_google_autocreate()) {
+      return new WP_Error('no_account', 'Акаунт із цим email не знайдено. Увійдіть поштою, якою купували.', array('status' => 404));
+    }
+    $uid = wp_insert_user(array(
+      'user_login'   => $email,
+      'user_email'   => $email,
+      'user_pass'    => wp_generate_password(24, true, true),
+      'first_name'   => isset($info['given_name']) ? sanitize_text_field($info['given_name']) : '',
+      'last_name'    => isset($info['family_name']) ? sanitize_text_field($info['family_name']) : '',
+      'display_name' => isset($info['name']) ? sanitize_text_field($info['name']) : $email,
+      'role'         => 'customer',
+    ));
+    if (is_wp_error($uid)) return new WP_Error('create_failed', 'Не вдалося створити акаунт.', array('status' => 500));
+    $user = get_user_by('id', $uid);
+  }
+
+  delete_transient('shatailo_lf_' . md5($ip));
+  return array(
+    'token' => shatailo_make_token($user->ID),
+    'user'  => shatailo_user_public($user->ID),
   );
 }

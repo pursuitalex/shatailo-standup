@@ -24,6 +24,10 @@
   var TOKEN_KEY = "shatailo_token";
   var token = HYBRID ? (localStorage.getItem(TOKEN_KEY) || "") : "";
   var meData = null; // { user, orders, library } з /me
+
+  /* ---- Google-логін (GIS). Вставити OAuth Client ID (…apps.googleusercontent.com).
+     Поки порожній рядок — кнопка Google показує «скоро», решта входу працює як є. ---- */
+  var GOOGLE_CLIENT_ID = "";
   function apiLogin(email, password) {
     return fetch(WP_API + "/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -33,6 +37,65 @@
   function apiMe() {
     return fetch(WP_API + "/me", { headers: { "Authorization": "Bearer " + token } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+  function apiGoogleLogin(credential) {
+    return fetch(WP_API + "/google-login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential: credential })
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+
+  /* ---- Google Identity Services: підвантажуємо скрипт один раз, малюємо кнопку ---- */
+  var gsiReady = false, gsiLoading = false, gsiQueue = [];
+  function loadGsi(cb) {
+    if (gsiReady) { cb(); return; }
+    gsiQueue.push(cb);
+    if (gsiLoading) return;
+    gsiLoading = true;
+    var s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true; s.defer = true;
+    s.onload = function () { gsiReady = true; gsiQueue.forEach(function (f) { f(); }); gsiQueue = []; };
+    s.onerror = function () { gsiLoading = false; };
+    document.head.appendChild(s);
+  }
+  function renderGoogleBtn() {
+    if (!GOOGLE_CLIENT_ID) return;
+    var wrap = document.querySelector("#authModal [data-google-btn]");
+    if (!wrap) return;
+    loadGsi(function () {
+      if (!window.google || !google.accounts || !google.accounts.id) return;
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: onGoogleCredential,
+        ux_mode: "popup"
+      });
+      wrap.innerHTML = "";
+      google.accounts.id.renderButton(wrap, {
+        theme: "filled_black", size: "large", shape: "pill",
+        text: "continue_with", logo_alignment: "center", width: 300, locale: "uk"
+      });
+    });
+  }
+  function onGoogleCredential(resp) {
+    var statusEl = document.querySelector("#authModal [data-auth-status]");
+    if (statusEl) { statusEl.textContent = "Входимо через Google…"; statusEl.className = "auth-status"; }
+    if (!resp || !resp.credential) {
+      if (statusEl) { statusEl.textContent = "Google не повернув дані. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+      return;
+    }
+    apiGoogleLogin(resp.credential).then(function (res) {
+      if (res.ok && res.data && res.data.token) {
+        token = res.data.token; meData = null;
+        try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {}
+        window.location.assign("/account");
+      } else {
+        var msg = (res.data && res.data.message) || "Не вдалося увійти через Google.";
+        if (statusEl) { statusEl.textContent = msg; statusEl.className = "auth-status is-err"; }
+      }
+    }).catch(function () {
+      if (statusEl) { statusEl.textContent = "Помилка мережі. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+    });
   }
   function libFromMe() {
     if (!meData || !meData.library) return [];
@@ -315,10 +378,13 @@
 
   /* ---------- модалка авторизації / акаунта ---------- */
   function authViewLogin() {
+    var googleBlock = GOOGLE_CLIENT_ID
+      ? '<div class="auth-google-wrap" data-google-btn></div>'
+      : '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
+          '<span class="auth-google__g">G</span> Продовжити з Google</button>';
     return '' +
       '<h3 class="authmodal__title">Увійти</h3>' +
-      '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
-        '<span class="auth-google__g">G</span> Продовжити з Google</button>' +
+      googleBlock +
       '<div class="auth-or"><span>або</span></div>' +
       '<form class="auth-form" data-auth-form>' +
         '<label class="auth-field"><span>Email</span><input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>' +
@@ -348,6 +414,7 @@
   }
   function openAuth() {
     renderAuthView();
+    if (!isLoggedIn()) renderGoogleBtn();
     var m = document.getElementById("authModal");
     if (m) { m.classList.add("is-open"); m.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; }
   }
