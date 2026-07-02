@@ -43,6 +43,26 @@ function shatailo_google_autocreate() {
   return false;
 }
 
+/* ---- Передача кошика з нового фронту (Варіант B) ----
+   Наш фронт веде на shatailo.com/?shatailo_add=39066,20812 → очищаємо Woo-кошик,
+   додаємо ці товари й ведемо на checkout. Кошик/міні-кошик лишаються в нашому
+   дизайні на new.shatailo.com, а рідна оплата WayForPay не змінюється. */
+add_action('template_redirect', function () {
+  if (empty($_GET['shatailo_add'])) return;
+  if (!function_exists('WC') || is_null(WC()->cart)) return;
+  $ids = array_filter(array_map('intval', explode(',', (string) $_GET['shatailo_add'])));
+  if (!$ids) { wp_safe_redirect(function_exists('wc_get_cart_url') ? wc_get_cart_url() : home_url('/cart/')); exit; }
+  WC()->cart->empty_cart();
+  foreach ($ids as $pid) {
+    $product = wc_get_product($pid);
+    if ($product && $product->is_purchasable() && $product->is_in_stock()) {
+      WC()->cart->add_to_cart($pid);
+    }
+  }
+  wp_safe_redirect(wc_get_checkout_url());
+  exit;
+});
+
 /* ---- CORS для REST ---- */
 add_action('rest_api_init', function () {
   add_filter('rest_pre_serve_request', function ($served) {

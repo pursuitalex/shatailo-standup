@@ -15,9 +15,22 @@
   /* ---- Крок 1: ГІБРИД — кошик/оплата/кабінет на живому WooCommerce (shatailo.com).
      Мок-магазин лишається в коді нижче; вимикається одним прапорцем HYBRID=false. ---- */
   var HYBRID = true;
+  /* Варіант B: наш кошик+міні-кошик на фронті; товари передаємо у Woo лише перед оплатою.
+     Логін/кабінет/оплата лишаються реальними (HYBRID). OWN_CART=false → старий гібрид (стрибок на Woo). */
+  var OWN_CART = true;
   var WOO_BASE = "https://shatailo.com";
   var WOO_PID = { kosmichnyi: 39066, povitryane: 20812, sekunda: 3922, tymchasovi: 67 };
   function wooAddToCart(id) { return WOO_BASE + "/cart/?add-to-cart=" + (WOO_PID[id] || id); }
+  /* передача нашого кошика в Woo перед оплатою: /?shatailo_add=pid1,pid2 (обробляє плагін) */
+  function wooHandoff() {
+    var ids = cartItems().map(function (i) { return WOO_PID[i.id] || i.id; }).filter(Boolean);
+    return WOO_BASE + "/?shatailo_add=" + ids.join(",");
+  }
+  function checkoutGoBtn(cls, label) {
+    return OWN_CART
+      ? '<button class="' + cls + '" data-checkout-go type="button" data-hover>' + label + "</button>"
+      : '<a class="' + cls + '" data-hover href="/checkout">' + label + "</a>";
+  }
 
   /* ---- Headless-кабінет через власний WP API (mu-plugin shatailo-api) ---- */
   var WP_API = WOO_BASE + "/wp-json/shatailo/v1";
@@ -282,12 +295,12 @@
     if (!header || header.querySelector(".header__tools")) return;
     var tools = document.createElement("div");
     tools.className = "header__tools";
-    tools.innerHTML = HYBRID
-      ? '<button class="hicon" data-account type="button" aria-label="Кабінет" data-hover>' + ICON_USER + '</button>' +
-        '<a class="hicon" href="' + WOO_BASE + '/cart/" aria-label="Кошик" data-hover>' + ICON_CART + '</a>'
-      : '<button class="hicon" data-account type="button" aria-label="Акаунт" data-hover>' + ICON_USER + '</button>' +
-        '<button class="hicon" data-cart-toggle type="button" aria-label="Кошик" data-hover>' + ICON_CART +
+    var acctBtn = '<button class="hicon" data-account type="button" aria-label="' + (HYBRID ? "Кабінет" : "Акаунт") + '" data-hover>' + ICON_USER + "</button>";
+    var cartBtn = (HYBRID && !OWN_CART)
+      ? '<a class="hicon" href="' + WOO_BASE + '/cart/" aria-label="Кошик" data-hover>' + ICON_CART + "</a>"
+      : '<button class="hicon" data-cart-toggle type="button" aria-label="Кошик" data-hover>' + ICON_CART +
         '<span class="hicon__badge" data-cart-count hidden>0</span></button>';
+    tools.innerHTML = acctBtn + cartBtn;
     // якщо є правий блок хедера — іконки зліва від кнопки; інакше — в кінець хедера
     var right = header.querySelector(".header__right");
     if (right) right.insertBefore(tools, right.firstChild);
@@ -359,7 +372,7 @@
       '<div class="minicart__subtotal"><span>Проміжний підсумок</span><b>' + uah(cartSubtotal()) + '</b></div>' +
       '<div class="minicart__actions">' +
       '  <a class="btn btn--ghost btn--sm" data-hover href="/cart">Переглянути кошик</a>' +
-      '  <a class="btn btn--solid btn--sm" data-hover href="/checkout">Оформлення замовлення</a>' +
+      "  " + checkoutGoBtn("btn btn--solid btn--sm", "Оформлення замовлення") +
       "</div>";
   }
 
@@ -461,7 +474,7 @@
           '<h2 class="cartpage__totals-title">Підсумки кошика</h2>' +
           '<div class="cartpage__totals-row"><span>Проміжний підсумок</span><b>' + uah(cartSubtotal()) + '</b></div>' +
           '<div class="cartpage__totals-row cartpage__totals-row--grand"><span>Загалом</span><b>' + uah(cartSubtotal()) + '</b></div>' +
-          '<a class="btn btn--solid cartpage__checkout" data-hover href="/checkout">Перейти до оформлення</a>' +
+          checkoutGoBtn("btn btn--solid cartpage__checkout", "Перейти до оформлення") +
         '</div>' +
       '</div>';
   }
@@ -543,6 +556,7 @@
 
     if (closest("[data-cart-toggle]")) { e.preventDefault(); openCart(); return; }
     if (closest("[data-cart-close]")) { closeCart(); return; }
+    if (closest("[data-checkout-go]")) { e.preventDefault(); if (cartItems().length) window.location.href = wooHandoff(); return; }
     if (closest("[data-account-open]")) { e.preventDefault(); openAuth(); return; }
     var acct = closest("[data-account]");
     if (acct) { e.preventDefault(); if (isLoggedIn()) window.location.assign("/account"); else openAuth(); return; }
@@ -550,7 +564,7 @@
 
     var add = closest("[data-add-to-cart]");
     if (add) { e.preventDefault();
-      if (HYBRID) { window.location.href = wooAddToCart(add.getAttribute("data-add-to-cart")); return; }
+      if (HYBRID && !OWN_CART) { window.location.href = wooAddToCart(add.getAttribute("data-add-to-cart")); return; }
       addToCart(add.getAttribute("data-add-to-cart")); openCart(); return; }
 
     var inc = closest("[data-qty-inc]"); if (inc) { var id = inc.getAttribute("data-qty-inc"); setQty(id, (cart.find(function(c){return c.id===id;})||{}).qty + 1); return; }
@@ -829,13 +843,13 @@
   }
 
   function init() {
-    if (HYBRID) {
-      // кошик/оформлення лишаються на Woo; /account рендеримо самі (headless-кабінет нижче)
-      if (document.querySelector("[data-cart-page]")) return void location.replace(WOO_BASE + "/cart/");
-      if (document.querySelector("[data-checkout-page]")) return void location.replace(WOO_BASE + "/checkout/");
-    }
+    // наша сторінка /checkout не використовується у прод-режимах (оплата на Woo) → на Woo
+    if ((HYBRID || OWN_CART) && document.querySelector("[data-checkout-page]")) return void location.replace(WOO_BASE + "/checkout/");
+    // /cart: при OWN_CART рендеримо наш; інакше при HYBRID — редірект на Woo
+    if (HYBRID && !OWN_CART && document.querySelector("[data-cart-page]")) return void location.replace(WOO_BASE + "/cart/");
     injectHeaderTools();
-    if (HYBRID) injectAuthModal(); else { injectMiniCart(); injectAuthModal(); }
+    if (OWN_CART || !HYBRID) injectMiniCart();
+    injectAuthModal();
 
     document.addEventListener("click", onClick);
     document.addEventListener("submit", onSubmit);
