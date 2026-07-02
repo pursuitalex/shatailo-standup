@@ -806,7 +806,7 @@
     var content = tab === "orders" ? accOrders() : (tab === "profile" ? accProfile() : accLibrary());
     root.innerHTML =
       '<div class="acc-head">' +
-        '<p class="acc-greet">Вітаємо 👋</p>' +
+        '<p class="acc-greet">Вітаємо,</p>' +
         '<div class="acc-head__row">' +
           '<span class="acc-welcome__name">' + esc(u.displayName || u.firstName || u.name || "друже") + "</span>" +
           '<button class="acc-logout" data-account-logout type="button" data-hover>Вийти</button>' +

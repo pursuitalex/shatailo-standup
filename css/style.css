@@ -1380,9 +1380,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .acc-head { margin-bottom: clamp(20px, 3vh, 28px); }
 .acc-greet { color: var(--muted); font-size: 0.85rem; margin: 0 0 6px; }
 .acc-head__row { display: flex; justify-content: space-between; align-items: baseline; gap: 18px; }
-.acc-welcome__name { min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.5rem, 5vw, 2.2rem); line-height: 1.05; color: var(--white); }
-.acc-logout { flex: 0 0 auto; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--red); white-space: nowrap; transition: opacity 0.25s; }
-.acc-logout:hover { opacity: 0.65; }
+.acc-welcome__name { min-width: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 5.5vw, 2.9rem); line-height: 1.03; text-transform: uppercase; color: var(--white); }
+.acc-logout { flex: 0 0 auto; font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; transition: color 0.25s; }
+.acc-logout:hover { color: var(--yellow); }
+/* кабінет: герой без generic-заголовка «Кабінет» — головним стає ім'я користувача */
+.legal--account .legal__hero { border-bottom: none; padding-bottom: 0; }
+.legal--account .legal__content { padding-top: clamp(6px, 1.5vh, 14px); }
 
 /* таби — завжди один рядок, з горизонтальним скролом за потреби */
 .acc-nav { display: flex; flex-wrap: nowrap; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: clamp(28px, 5vh, 44px); overflow-x: auto; scrollbar-width: none; }
