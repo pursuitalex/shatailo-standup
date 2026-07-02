@@ -38,14 +38,14 @@
     return fetch(WP_API + "/me", { headers: { "Authorization": "Bearer " + token } })
       .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
   }
-  function apiGoogleLogin(credential) {
+  function apiGoogleLogin(accessToken) {
     return fetch(WP_API + "/google-login", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential: credential })
+      body: JSON.stringify({ access_token: accessToken })
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
   }
 
-  /* ---- Google Identity Services: підвантажуємо скрипт один раз, малюємо кнопку ---- */
+  /* ---- Google Identity Services: підвантажуємо скрипт один раз ---- */
   var gsiReady = false, gsiLoading = false, gsiQueue = [];
   function loadGsi(cb) {
     if (gsiReady) { cb(); return; }
@@ -59,32 +59,41 @@
     s.onerror = function () { gsiLoading = false; };
     document.head.appendChild(s);
   }
-  function renderGoogleBtn() {
-    if (!GOOGLE_CLIENT_ID) return;
-    var wrap = document.querySelector("#authModal [data-google-btn]");
-    if (!wrap) return;
+  /* Власна кнопка → OAuth2-попап (access token) → бекенд перевіряє й видає наш токен.
+     Так зберігаємо кастомний дизайн кнопки (офіційний GIS-віджет не піддається повній стилізації). */
+  var gTokenClient = null;
+  function ensureTokenClient(cb) {
+    if (gTokenClient) { cb(); return; }
     loadGsi(function () {
-      if (!window.google || !google.accounts || !google.accounts.id) return;
-      google.accounts.id.initialize({
-        client_id: GOOGLE_CLIENT_ID,
-        callback: onGoogleCredential,
-        ux_mode: "popup"
-      });
-      wrap.innerHTML = "";
-      google.accounts.id.renderButton(wrap, {
-        theme: "filled_black", size: "large", shape: "pill",
-        text: "continue_with", logo_alignment: "center", width: 300, locale: "uk"
-      });
+      if (window.google && google.accounts && google.accounts.oauth2) {
+        gTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: "openid email profile",
+          callback: onGoogleToken
+        });
+      }
+      cb();
     });
   }
-  function onGoogleCredential(resp) {
+  function startGoogleLogin() {
     var statusEl = document.querySelector("#authModal [data-auth-status]");
-    if (statusEl) { statusEl.textContent = "Входимо через Google…"; statusEl.className = "auth-status"; }
-    if (!resp || !resp.credential) {
-      if (statusEl) { statusEl.textContent = "Google не повернув дані. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+    if (statusEl) { statusEl.textContent = "Відкриваємо Google…"; statusEl.className = "auth-status"; }
+    ensureTokenClient(function () {
+      if (!gTokenClient) {
+        if (statusEl) { statusEl.textContent = "Не вдалося підключити Google. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+        return;
+      }
+      gTokenClient.requestAccessToken();
+    });
+  }
+  function onGoogleToken(resp) {
+    var statusEl = document.querySelector("#authModal [data-auth-status]");
+    if (!resp || !resp.access_token) {
+      if (statusEl) { statusEl.textContent = "Вхід через Google скасовано."; statusEl.className = "auth-status is-err"; }
       return;
     }
-    apiGoogleLogin(resp.credential).then(function (res) {
+    if (statusEl) { statusEl.textContent = "Входимо через Google…"; statusEl.className = "auth-status"; }
+    apiGoogleLogin(resp.access_token).then(function (res) {
       if (res.ok && res.data && res.data.token) {
         token = res.data.token; meData = null;
         try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {}
@@ -378,13 +387,10 @@
 
   /* ---------- модалка авторизації / акаунта ---------- */
   function authViewLogin() {
-    var googleBlock = GOOGLE_CLIENT_ID
-      ? '<div class="auth-google-wrap" data-google-btn></div>'
-      : '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
-          '<span class="auth-google__g">G</span> Продовжити з Google</button>';
     return '' +
       '<h3 class="authmodal__title">Увійти</h3>' +
-      googleBlock +
+      '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
+        '<span class="auth-google__g">G</span> Продовжити з Google</button>' +
       '<div class="auth-or"><span>або</span></div>' +
       '<form class="auth-form" data-auth-form>' +
         '<label class="auth-field"><span>Email</span><input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>' +
@@ -414,7 +420,7 @@
   }
   function openAuth() {
     renderAuthView();
-    if (!isLoggedIn()) renderGoogleBtn();
+    if (!isLoggedIn() && GOOGLE_CLIENT_ID) ensureTokenClient(function () {});
     var m = document.getElementById("authModal");
     if (m) { m.classList.add("is-open"); m.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; }
   }
@@ -552,6 +558,7 @@
     var rm = closest("[data-rm]"); if (rm) { removeFromCart(rm.getAttribute("data-rm")); return; }
 
     if (closest("[data-google]")) {
+      if (HYBRID && GOOGLE_CLIENT_ID) { startGoogleLogin(); return; }
       if (HYBRID) { var gs = document.querySelector("#authModal [data-auth-status]"); if (gs) { gs.textContent = "Вхід через Google — скоро."; gs.className = "auth-status"; } return; }
       login({ name: "Гість", lastName: "", displayName: "Гість Google", email: "guest@gmail.com", provider: "google" }); window.location.assign("/account"); return;
     }

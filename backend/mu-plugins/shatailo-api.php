@@ -211,36 +211,87 @@ function shatailo_route_me($req) {
    Фронт (GIS) присилає ID-token у полі `credential`. Валідуємо через офіційний
    ендпоінт Google tokeninfo (без сторонніх бібліотек — для нашого обсігу достатньо),
    перевіряємо aud/iss/exp/email_verified, далі шукаємо WP-користувача за email. */
+/* Верифікація Google-токена → email/verified/профіль.
+   Основний шлях — access_token (кастомна кнопка, OAuth2-попап): перевіряємо аудиторію
+   (azp/aud == наш client_id, захист від чужих токенів), email беремо з tokeninfo або userinfo.
+   Запасний шлях — credential (ID-token): перевіряємо aud/iss/exp. */
+function shatailo_google_verify($req) {
+  $client_id = shatailo_google_client_id();
+  $access = (string) $req->get_param('access_token');
+  $cred   = (string) $req->get_param('credential');
+
+  if ($access !== '') {
+    $resp = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?access_token=' . rawurlencode($access), array('timeout' => 10));
+    if (is_wp_error($resp)) return new WP_Error('google_unreachable', 'Не вдалося звʼязатися з Google.', array('status' => 502));
+    $info = json_decode(wp_remote_retrieve_body($resp), true);
+    if ((int) wp_remote_retrieve_response_code($resp) !== 200 || !is_array($info) || isset($info['error']) || isset($info['error_description'])) {
+      return new WP_Error('bad_token', 'Недійсний токен Google.', array('status' => 401));
+    }
+    $azp = isset($info['azp']) ? (string) $info['azp'] : '';
+    $aud = isset($info['aud']) ? (string) $info['aud'] : '';
+    if (!hash_equals($client_id, $azp) && !hash_equals($client_id, $aud)) {
+      return new WP_Error('bad_aud', 'Токен видано для іншого застосунку.', array('status' => 401));
+    }
+    $exp = isset($info['exp']) ? (int) $info['exp'] : 0;
+    if ($exp && $exp < time()) return new WP_Error('token_expired', 'Токен Google протермінований.', array('status' => 401));
+
+    $email    = isset($info['email']) ? sanitize_email($info['email']) : '';
+    $verified = isset($info['email_verified']) && ($info['email_verified'] === true || $info['email_verified'] === 'true');
+    $profile  = $info;
+    if ($email === '') { // tokeninfo не завжди повертає email/імена → добираємо через userinfo
+      $ur = wp_remote_get('https://www.googleapis.com/oauth2/v3/userinfo', array(
+        'timeout' => 10, 'headers' => array('Authorization' => 'Bearer ' . $access),
+      ));
+      if (!is_wp_error($ur) && (int) wp_remote_retrieve_response_code($ur) === 200) {
+        $ui = json_decode(wp_remote_retrieve_body($ur), true);
+        if (is_array($ui)) {
+          $email    = isset($ui['email']) ? sanitize_email($ui['email']) : '';
+          $verified = isset($ui['email_verified']) && ($ui['email_verified'] === true || $ui['email_verified'] === 'true');
+          $profile  = array_merge($profile, $ui);
+        }
+      }
+    }
+    return array('email' => $email, 'verified' => $verified, 'profile' => $profile);
+  }
+
+  if ($cred !== '') {
+    $resp = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($cred), array('timeout' => 10));
+    if (is_wp_error($resp)) return new WP_Error('google_unreachable', 'Не вдалося звʼязатися з Google.', array('status' => 502));
+    $info = json_decode(wp_remote_retrieve_body($resp), true);
+    if ((int) wp_remote_retrieve_response_code($resp) !== 200 || !is_array($info) || isset($info['error'])) {
+      return new WP_Error('bad_token', 'Недійсний токен Google.', array('status' => 401));
+    }
+    $aud = isset($info['aud']) ? (string) $info['aud'] : '';
+    $iss = isset($info['iss']) ? (string) $info['iss'] : '';
+    $exp = isset($info['exp']) ? (int) $info['exp'] : 0;
+    if (!hash_equals($client_id, $aud)) return new WP_Error('bad_aud', 'Токен видано для іншого застосунку.', array('status' => 401));
+    if ($iss !== 'accounts.google.com' && $iss !== 'https://accounts.google.com') return new WP_Error('bad_iss', 'Невірний видавець токена.', array('status' => 401));
+    if ($exp < time()) return new WP_Error('token_expired', 'Токен Google протермінований.', array('status' => 401));
+    return array(
+      'email'    => isset($info['email']) ? sanitize_email($info['email']) : '',
+      'verified' => isset($info['email_verified']) && ($info['email_verified'] === true || $info['email_verified'] === 'true'),
+      'profile'  => $info,
+    );
+  }
+
+  return new WP_Error('bad_request', 'Немає токена Google.', array('status' => 400));
+}
+
 function shatailo_route_google_login($req) {
   $client_id = shatailo_google_client_id();
   if (!$client_id) return new WP_Error('not_configured', 'Google-логін ще не налаштовано.', array('status' => 503));
-
-  $cred = (string) $req->get_param('credential');
-  if (!$cred) return new WP_Error('bad_request', 'Немає токена Google.', array('status' => 400));
 
   $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
   if (shatailo_login_blocked($ip)) {
     return new WP_Error('too_many', 'Забагато спроб. Спробуйте за 15 хв.', array('status' => 429));
   }
 
-  $resp = wp_remote_get('https://oauth2.googleapis.com/tokeninfo?id_token=' . rawurlencode($cred), array('timeout' => 10));
-  if (is_wp_error($resp)) return new WP_Error('google_unreachable', 'Не вдалося звʼязатися з Google.', array('status' => 502));
-  $code = (int) wp_remote_retrieve_response_code($resp);
-  $info = json_decode(wp_remote_retrieve_body($resp), true);
-  if ($code !== 200 || !is_array($info) || isset($info['error'])) {
-    shatailo_login_fail($ip);
-    return new WP_Error('bad_token', 'Недійсний токен Google.', array('status' => 401));
+  $v = shatailo_google_verify($req);
+  if (is_wp_error($v)) {
+    if (in_array($v->get_error_code(), array('bad_token', 'bad_aud', 'bad_iss', 'token_expired'), true)) shatailo_login_fail($ip);
+    return $v;
   }
-
-  $aud      = isset($info['aud']) ? (string) $info['aud'] : '';
-  $iss      = isset($info['iss']) ? (string) $info['iss'] : '';
-  $exp      = isset($info['exp']) ? (int) $info['exp'] : 0;
-  $email    = isset($info['email']) ? sanitize_email($info['email']) : '';
-  $verified = isset($info['email_verified']) && ($info['email_verified'] === true || $info['email_verified'] === 'true');
-
-  if (!hash_equals($client_id, $aud)) return new WP_Error('bad_aud', 'Токен видано для іншого застосунку.', array('status' => 401));
-  if ($iss !== 'accounts.google.com' && $iss !== 'https://accounts.google.com') return new WP_Error('bad_iss', 'Невірний видавець токена.', array('status' => 401));
-  if ($exp < time()) return new WP_Error('token_expired', 'Токен Google протермінований.', array('status' => 401));
+  $email = $v['email']; $verified = $v['verified']; $info = $v['profile'];
   if (!$email || !$verified) return new WP_Error('no_email', 'Google не підтвердив email.', array('status' => 401));
 
   $user = get_user_by('email', $email);
