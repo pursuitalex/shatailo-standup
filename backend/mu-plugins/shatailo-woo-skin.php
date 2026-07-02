@@ -109,8 +109,10 @@ body.woocommerce-page .wc-block-components-button {
   font-family: "Unbounded", sans-serif !important;
   text-transform: uppercase;
   font-weight: 600 !important;
-  border-radius: 999px !important;
-  transition: background 0.2s, color 0.2s;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.06em !important;
+  border-radius: 2px !important;
+  transition: background 0.25s, color 0.25s, border-color 0.25s, box-shadow 0.25s !important;
 }
 body.woocommerce-page .button:hover,
 body.woocommerce-page button.button:hover,
@@ -176,14 +178,26 @@ body.woocommerce-page button#place_order.button.alt {
   color: #0a0a0a !important;
   -webkit-text-fill-color: #0a0a0a !important;
   border: 1px solid #f2ff00 !important;
+  border-radius: 2px !important;
+  font-family: "Unbounded", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  padding: 16px 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
   opacity: 1 !important;
 }
 body.woocommerce-page #payment #place_order:hover,
 body.woocommerce-checkout #order_review #place_order:hover {
-  background: transparent !important;
-  background-color: transparent !important;
-  color: #f2ff00 !important;
-  -webkit-text-fill-color: #f2ff00 !important;
+  background: #f2ff00 !important;
+  background-color: #f2ff00 !important;
+  color: #0a0a0a !important;
+  -webkit-text-fill-color: #0a0a0a !important;
+  box-shadow: 0 0 32px rgba(242, 255, 0, 0.35) !important;
 }
 
 /* --- оверлей завантаження WooCommerce (був білий → робимо темним) --- */
