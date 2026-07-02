@@ -188,6 +188,89 @@ body.woocommerce-checkout #order_review #place_order:hover {
 
 /* --- оверлей завантаження WooCommerce (був білий → робимо темним) --- */
 body.woocommerce-page .blockUI.blockOverlay { background: #060606 !important; }
+
+/* ============================================================
+   Міні-кошик (Elementor side-cart) — під наш стиль
+   ============================================================ */
+/* нативні змінні віджета Elementor menu-cart */
+body.woocommerce-page .elementor-menu-cart__main,
+body.woocommerce-page .elementor-widget-woocommerce-menu-cart {
+  --cart-background-color: #0c0c0c !important;
+  --menu-cart-subtotal-color: #f4f2ec !important;
+  --product-price-color: #f2ff00 !important;
+  --remove-item-button-color: #8d8d86 !important;
+  --toggle-button-icon-color: #f4f2ec !important;
+  --cart-close-button-color: #f2ff00 !important;
+  --view-cart-button-text-color: #f4f2ec !important;
+  --view-cart-button-background-color: transparent !important;
+  --view-cart-button-hover-text-color: #0a0a0a !important;
+  --view-cart-button-hover-background-color: #f4f2ec !important;
+  --checkout-button-text-color: #0a0a0a !important;
+  --checkout-button-background-color: #f2ff00 !important;
+  --checkout-button-hover-text-color: #0a0a0a !important;
+  --checkout-button-hover-background-color: #f4f2ec !important;
+}
+/* панель */
+body.woocommerce-page .elementor-menu-cart__main,
+body.woocommerce-page .elementor-menu-cart__container {
+  background: #0c0c0c !important;
+  color: #f4f2ec !important;
+}
+body.woocommerce-page .elementor-menu-cart__main { border-left: 1px solid rgba(255, 255, 255, 0.1) !important; }
+/* товари */
+body.woocommerce-page .woocommerce-mini-cart-item,
+body.woocommerce-page .elementor-menu-cart__product {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #f4f2ec !important;
+}
+body.woocommerce-page .widget_shopping_cart_content a:not(.remove) { color: #f4f2ec !important; }
+body.woocommerce-page .widget_shopping_cart_content a:not(.remove):hover { color: #f2ff00 !important; }
+body.woocommerce-page .widget_shopping_cart_content .quantity,
+body.woocommerce-page .widget_shopping_cart_content .woocommerce-Price-amount { color: #f4f2ec !important; }
+/* хрестик видалення */
+body.woocommerce-page .woocommerce-mini-cart a.remove,
+body.woocommerce-page .elementor-menu-cart__product-remove a {
+  color: #8d8d86 !important;
+  background: transparent !important;
+}
+body.woocommerce-page .woocommerce-mini-cart a.remove:hover { color: #f2ff00 !important; }
+/* підсумок */
+body.woocommerce-page .woocommerce-mini-cart__total,
+body.woocommerce-page .elementor-menu-cart__subtotal {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f4f2ec !important;
+  font-family: "Unbounded", sans-serif !important;
+}
+body.woocommerce-page .woocommerce-mini-cart__total .amount,
+body.woocommerce-page .elementor-menu-cart__subtotal .amount,
+body.woocommerce-page .elementor-menu-cart__subtotal .woocommerce-Price-amount { color: #f2ff00 !important; }
+/* кнопки міні-кошика */
+body.woocommerce-page .woocommerce-mini-cart__buttons .button,
+body.woocommerce-page .elementor-menu-cart__footer-buttons .elementor-button {
+  font-family: "Unbounded", sans-serif !important;
+  text-transform: uppercase;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  border: 1px solid #f2ff00 !important;
+}
+/* «Переглянути кошик» — вторинна (контур) */
+body.woocommerce-page .woocommerce-mini-cart__buttons .button:not(.checkout) {
+  background: transparent !important;
+  color: #f4f2ec !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+body.woocommerce-page .woocommerce-mini-cart__buttons .button:not(.checkout):hover {
+  border-color: #f2ff00 !important;
+  color: #f2ff00 !important;
+}
+/* «Оформлення замовлення» — основна (жовта) */
+body.woocommerce-page .woocommerce-mini-cart__buttons .button.checkout {
+  background: #f2ff00 !important;
+  color: #0a0a0a !important;
+  border-color: #f2ff00 !important;
+}
+/* кнопка закриття панелі */
+body.woocommerce-page .elementor-menu-cart__close-button { color: #f2ff00 !important; }
 CSS;
 
   wp_add_inline_style('shatailo-woo-skin', $css);
