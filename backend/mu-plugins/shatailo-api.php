@@ -348,37 +348,55 @@ function shatailo_route_google_login($req) {
    Оплату WayForPay не чіпаємо.
    ============================================================ */
 
-/* кнопка над формою checkout — лише гостю */
+/* заголовок «Персональні дані» замість «Платіжні дані» на checkout */
 add_action('woocommerce_before_checkout_form', function () {
+  add_filter('gettext', 'shatailo_rename_billing_heading', 20, 2);
+}, 1);
+function shatailo_rename_billing_heading($tr, $text) {
+  if ($text === 'Billing details') return 'Персональні дані';
+  return $tr;
+}
+
+/* реєстрація (гість): 2 колонки — поля зліва, Google справа. Відкриваємо ліву колонку */
+add_action('woocommerce_before_checkout_billing_form', function () {
+  if (is_user_logged_in() || !shatailo_google_client_id()) return;
+  echo '<h4 class="shatailo-subhead">Дані для входу</h4><div class="shatailo-cols"><div class="shatailo-cols__fields">';
+}, 20);
+
+/* закриваємо ліву колонку + права колонка з Google + стилі */
+add_action('woocommerce_after_checkout_billing_form', function () {
   if (is_user_logged_in() || !shatailo_google_client_id()) return;
   $nonce = esc_attr(wp_create_nonce('shatailo_google_prefill'));
+  echo '</div><div class="shatailo-cols__side">';
   echo <<<HTML
 <div class="shatailo-cg" data-nonce="{$nonce}">
-  <p class="shatailo-cg__lead">Купуєте вперше? Заповніть дані одним кліком:</p>
+  <p class="shatailo-cg__lead">Заповніть дані одним кліком:</p>
   <button type="button" class="shatailo-cg__btn" id="shatailoCgBtn"><span class="shatailo-cg__g">G</span>&nbsp;Продовжити з Google</button>
   <p class="shatailo-cg__status" id="shatailoCgStatus"></p>
-  <div class="shatailo-cg__or"><span>або заповніть вручну нижче</span></div>
 </div>
+HTML;
+  echo '</div></div>';
+  echo <<<CSS
 <style>
-.shatailo-cg { margin: 0 0 30px; }
+.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:1rem; text-transform:uppercase; color:#f4f2ec; margin:6px 0 18px; }
+.shatailo-cols { display:grid; grid-template-columns:1fr 1fr; gap:0 48px; align-items:start; }
+.shatailo-cols__fields { min-width:0; }
+.shatailo-cols__side { padding-top:2px; }
+@media (max-width:768px){ .shatailo-cols { grid-template-columns:1fr; gap:26px; } }
 .shatailo-cg__lead { color:#f4f2ec; font-family:"Unbounded",sans-serif; font-size:.9rem; text-transform:uppercase; margin:0 0 14px; }
-.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; background:#f4f2ec; color:#0a0a0a; border:1px solid #f4f2ec; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; white-space:nowrap; transition:background .25s, border-color .25s, box-shadow .25s; }
-.shatailo-cg__btn:hover { background:#f2ff00; border-color:#f2ff00; color:#0a0a0a; box-shadow:0 0 32px rgba(242,255,0,.35); }
-.shatailo-cg__btn:hover .shatailo-cg__g { color:#0a0a0a; }
-.shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a; }
+.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s, box-shadow .25s; }
+.shatailo-cg__btn:hover { background:#f2ff00 !important; color:#0a0a0a !important; box-shadow:0 0 32px rgba(242,255,0,.35); }
+.shatailo-cg__btn:hover .shatailo-cg__g { color:#0a0a0a !important; }
+.shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a !important; }
 .shatailo-cg__status { min-height:1.1em; margin:10px 0 0; font-size:.85rem; color:#f2ff00; }
 .shatailo-cg__status.is-err { color:#ff5555; }
-.shatailo-cg__or { display:flex; align-items:center; gap:14px; margin:22px 0 0; color:#8d8d86; font-size:.76rem; text-transform:uppercase; letter-spacing:.04em; }
-.shatailo-cg__or::before, .shatailo-cg__or::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
-/* блок «Вже замовляли у нас?» — чисто, без рамок і контрастних обводок */
 body.woocommerce-checkout .woocommerce-form-login-toggle { margin:0 0 18px; }
 body.woocommerce-checkout .woocommerce-form-login-toggle .woocommerce-info { background:transparent !important; border:0 !important; border-top:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; color:#8d8d86 !important; font-family:"Inter",sans-serif !important; font-size:.9rem; }
 body.woocommerce-checkout .woocommerce-form-login-toggle .woocommerce-info::before { display:none !important; }
 body.woocommerce-checkout .woocommerce-form-login-toggle .showlogin { color:#f2ff00 !important; background:transparent !important; border:0 !important; padding:0 !important; margin-left:6px; text-transform:none; text-decoration:underline; }
 body.woocommerce-checkout .woocommerce-form-login-toggle .showlogin:hover { color:#f4f2ec !important; }
-body.woocommerce-checkout form.woocommerce-form-login { margin:16px 0 26px; }
 </style>
-HTML;
+CSS;
 });
 
 /* перенести Woo-форму «Вже замовляли у нас?» на початок блоку «Платіжні дані»
@@ -403,6 +421,13 @@ window.addEventListener("load", function () {
   var CID = {$cid};
   var hasGoogle = !!(window.google && google.accounts && google.accounts.oauth2);
   function el(id){ return document.getElementById(id); }
+
+  /* поле «пароль» (.woocommerce-account-fields) рендериться окремо — переносимо в ліву колонку */
+  (function(){
+    var acct = document.querySelector(".woocommerce-account-fields");
+    var left = document.querySelector(".shatailo-cols__fields");
+    if (acct && left) left.appendChild(acct);
+  })();
 
   /* (1) реєстрація: Google підтягує поля */
   (function(){
