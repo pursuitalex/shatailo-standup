@@ -363,8 +363,8 @@ add_action('wp_head', function () {
   echo <<<CSS
 <style>
 body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 26px !important; }
-.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:.95rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 16px; }
-.shatailo-loginbox { border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
+.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:400; font-size:.82rem; letter-spacing:.08em; text-transform:uppercase; color:#f4f2ec; margin:0 0 16px; }
+.shatailo-loginbox { display:inline-block; width:fit-content; max-width:100%; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
 .shatailo-loginbox p { margin:0; color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; }
 .shatailo-loginbox .showlogin { color:#f2ff00 !important; text-decoration:underline; }
 .shatailo-loginbox .showlogin:hover { color:#f4f2ec !important; }
@@ -382,7 +382,7 @@ body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 26px !im
 body.woocommerce-checkout .woocommerce-billing-fields .form-row,
 body.woocommerce-checkout .woocommerce-account-fields .form-row { max-width:440px; width:100% !important; float:none !important; clear:none !important; margin:0 0 18px !important; }
 body.woocommerce-checkout form.woocommerce-form-login, body.woocommerce-checkout .woocommerce-form-login-toggle { display:none !important; }
-body.woocommerce-checkout #order_review_heading { margin-top:40px !important; }
+body.woocommerce-checkout #order_review_heading { margin-top:44px !important; padding-top:40px !important; border-top:1px solid rgba(255,255,255,.1) !important; }
 </style>
 CSS;
 });
