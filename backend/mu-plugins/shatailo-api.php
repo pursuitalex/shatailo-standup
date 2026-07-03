@@ -717,6 +717,17 @@ function shatailo_send_reset($login) {
   return true;
 }
 
+/* ---- Кастомізація WooCommerce-листів під бренд ---- */
+/* палітра листів */
+add_filter('option_woocommerce_email_base_color', function () { return '#f2ff00'; });            // акцент/хедер
+add_filter('option_woocommerce_email_background_color', function () { return '#060606'; });       // зовнішній фон
+add_filter('option_woocommerce_email_body_background_color', function () { return '#0c0c0c'; });  // фон тіла
+add_filter('option_woocommerce_email_text_color', function () { return '#f4f2ec'; });             // текст
+/* футер замість «Built with WooCommerce» */
+add_filter('woocommerce_email_footer_text', function () {
+  return 'Єгор Шатайло — стендап · сольники<br><a style="color:#f2ff00;" href="https://new.shatailo.com/">new.shatailo.com</a>';
+});
+
 /* wc-ajax: скидання пароля (у нашій модалці) — надіслати лист із посиланням */
 add_action('wc_ajax_shatailo_lostpassword', 'shatailo_lostpassword');
 function shatailo_lostpassword() {
