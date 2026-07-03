@@ -362,6 +362,10 @@ add_action('wp_head', function () {
   if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
   echo <<<CSS
 <style>
+/* секція «Персональні дані» — на всю ширину (Woo робить її пів-колонкою) */
+body.woocommerce-checkout #customer_details { display:block !important; }
+body.woocommerce-checkout #customer_details .col-1 { width:100% !important; max-width:none !important; float:none !important; }
+body.woocommerce-checkout #customer_details .col-2 { display:none !important; }
 body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 26px !important; }
 .shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:400; font-size:.82rem; letter-spacing:.08em; text-transform:uppercase; color:#f4f2ec; margin:0 0 16px; }
 .shatailo-loginbox { display:inline-block; max-width:100%; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
