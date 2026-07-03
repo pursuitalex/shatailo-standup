@@ -704,6 +704,19 @@ function shatailo_checkout_googlelogin() {
   wp_send_json_success();
 }
 
+/* Надіслати лист скидання через WooCommerce (лінк веде на ФРОНТЕНД my-account,
+   заскінений темним, а не на wp-login адмінку). */
+function shatailo_send_reset($login) {
+  $login = trim((string) $login);
+  if (!$login) return new WP_Error('bad_request', 'Вкажіть email.');
+  $user = get_user_by(strpos($login, '@') !== false ? 'email' : 'login', $login);
+  if (!$user) return new WP_Error('no_user', 'Користувача з таким email не знайдено.');
+  $key = get_password_reset_key($user);
+  if (is_wp_error($key)) return $key;
+  do_action('woocommerce_reset_password_notification', $user->user_login, $key);
+  return true;
+}
+
 /* wc-ajax: скидання пароля (у нашій модалці) — надіслати лист із посиланням */
 add_action('wc_ajax_shatailo_lostpassword', 'shatailo_lostpassword');
 function shatailo_lostpassword() {
@@ -714,7 +727,7 @@ function shatailo_lostpassword() {
   if (!$login) wp_send_json_error(array('message' => 'Вкажіть email або логін.'), 400);
   $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
   if (shatailo_login_blocked($ip, 'lp')) wp_send_json_error(array('message' => 'Забагато спроб. Спробуйте за 15 хв.'), 429);
-  $result = retrieve_password($login);
+  $result = shatailo_send_reset($login);
   if (is_wp_error($result)) {
     shatailo_login_fail($ip, 'lp');
     wp_send_json_error(array('message' => wp_strip_all_tags($result->get_error_message())), 400);
@@ -728,7 +741,7 @@ function shatailo_route_lostpassword($req) {
   if (!$login) return new WP_Error('bad_request', 'Вкажіть email.', array('status' => 400));
   $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
   if (shatailo_login_blocked($ip, 'lp')) return new WP_Error('too_many', 'Забагато спроб. Спробуйте за 15 хв.', array('status' => 429));
-  $result = retrieve_password($login);
+  $result = shatailo_send_reset($login);
   if (is_wp_error($result)) {
     shatailo_login_fail($ip, 'lp');
     return new WP_Error('reset_failed', wp_strip_all_tags($result->get_error_message()), array('status' => 400));
