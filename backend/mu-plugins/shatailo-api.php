@@ -340,23 +340,24 @@ function shatailo_route_google_login($req) {
 }
 
 /* ============================================================
-   Google-логін на Woo-CHECKOUT (реєстрація/вхід новачка перед оплатою)
-   Кнопка «Продовжити з Google» над формою → verify → створити/знайти
-   WP-акаунт → wp_set_auth_cookie (реальний вхід у WP) → reload сторінки.
-   Ручний шлях (ім'я+email+пароль) Woo лишається поряд.
-   Автостворення тут ЗАВЖДИ (на checkout людина саме реєструється як покупець).
+   Google на Woo-CHECKOUT — Варіант B: акаунт ЛИШЕ після успішної оплати.
+   Кнопка «Продовжити з Google» ПІДТЯГУЄ ім'я+email у форму (НЕ створює акаунт,
+   НЕ логінить). Сесію позначаємо як Google. Акаунт створюється в момент
+   УСПІШНОЇ ОПЛАТИ з даних замовлення; для Google — БЕЗ листа про пароль
+   (вхід через Google). Ручний шлях Woo (ім'я+email+пароль) — окремо, як є.
+   Оплату WayForPay не чіпаємо.
    ============================================================ */
 
 /* кнопка над формою checkout — лише гостю */
 add_action('woocommerce_before_checkout_form', function () {
   if (is_user_logged_in() || !shatailo_google_client_id()) return;
-  $nonce = esc_attr(wp_create_nonce('shatailo_checkout_login'));
+  $nonce = esc_attr(wp_create_nonce('shatailo_google_prefill'));
   echo <<<HTML
 <div class="shatailo-cg" data-nonce="{$nonce}">
-  <p class="shatailo-cg__lead">Купуєте вперше або вже маєте акаунт?</p>
+  <p class="shatailo-cg__lead">Купуєте вперше? Заповніть дані одним кліком:</p>
   <button type="button" class="shatailo-cg__btn" id="shatailoCgBtn"><span class="shatailo-cg__g">G</span>&nbsp;Продовжити з Google</button>
   <p class="shatailo-cg__status" id="shatailoCgStatus"></p>
-  <div class="shatailo-cg__or"><span>або оформіть як гість / з паролем нижче</span></div>
+  <div class="shatailo-cg__or"><span>або заповніть вручну нижче</span></div>
 </div>
 <style>
 .shatailo-cg { margin: 0 0 30px; }
@@ -372,13 +373,13 @@ add_action('woocommerce_before_checkout_form', function () {
 HTML;
 });
 
-/* GIS + JS на checkout */
+/* GIS + JS на checkout: Google → підтягнути поля (без входу) */
 add_action('wp_enqueue_scripts', function () {
   if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
   if (!shatailo_google_client_id()) return;
   wp_enqueue_script('gsi-client', 'https://accounts.google.com/gsi/client', array(), null, true);
-  $cid  = wp_json_encode(shatailo_google_client_id());
-  $ajax = wp_json_encode(admin_url('admin-ajax.php'));
+  $cid = wp_json_encode(shatailo_google_client_id());
+  $url = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_google_prefill', home_url('/')));
   $js = <<<JS
 window.addEventListener("load", function () {
   var box = document.querySelector(".shatailo-cg");
@@ -387,20 +388,28 @@ window.addEventListener("load", function () {
   if (!box || !btn || !st) return;
   if (!(window.google && google.accounts && google.accounts.oauth2)) return;
   var nonce = box.getAttribute("data-nonce");
+  function fill(id, val) { var el = document.getElementById(id); if (el && val) { el.value = val; el.dispatchEvent(new Event("change", { bubbles: true })); } }
   var tc = google.accounts.oauth2.initTokenClient({
     client_id: {$cid}, scope: "openid email profile",
     callback: function (r) {
-      if (!r || !r.access_token) { st.textContent = "Вхід скасовано."; st.className = "shatailo-cg__status is-err"; return; }
-      st.textContent = "Входимо…"; st.className = "shatailo-cg__status";
+      if (!r || !r.access_token) { st.textContent = "Скасовано."; st.className = "shatailo-cg__status is-err"; return; }
+      st.textContent = "Підтягуємо дані…"; st.className = "shatailo-cg__status";
       var fd = new FormData();
-      fd.append("action", "shatailo_checkout_login");
       fd.append("access_token", r.access_token);
       fd.append("nonce", nonce);
-      fetch({$ajax}, { method: "POST", body: fd, credentials: "same-origin" })
+      fetch({$url}, { method: "POST", body: fd, credentials: "same-origin" })
         .then(function (x) { return x.json(); })
         .then(function (j) {
-          if (j && j.success) { window.location.reload(); }
-          else { st.textContent = (j && j.data && j.data.message) || "Не вдалося увійти."; st.className = "shatailo-cg__status is-err"; }
+          if (j && j.success && j.data && j.data.email) {
+            fill("billing_email", j.data.email);
+            fill("billing_first_name", j.data.first);
+            fill("billing_last_name", j.data.last);
+            st.textContent = "✓ Дані підтягнуто. Завершіть замовлення нижче.";
+            st.className = "shatailo-cg__status";
+          } else {
+            st.textContent = (j && j.data && j.data.message) || "Не вдалося.";
+            st.className = "shatailo-cg__status is-err";
+          }
         })
         .catch(function () { st.textContent = "Помилка мережі. Спробуйте ще."; st.className = "shatailo-cg__status is-err"; });
     }
@@ -411,47 +420,61 @@ JS;
   wp_add_inline_script('gsi-client', $js);
 });
 
-/* AJAX: вхід через Google на checkout → створити/знайти → залогінити в WP */
-add_action('wp_ajax_nopriv_shatailo_checkout_login', 'shatailo_checkout_login');
-add_action('wp_ajax_shatailo_checkout_login', 'shatailo_checkout_login');
-function shatailo_checkout_login() {
-  if (!wp_verify_nonce(isset($_POST['nonce']) ? $_POST['nonce'] : '', 'shatailo_checkout_login')) {
-    wp_send_json_error(array('message' => 'Сесія застаріла — оновіть сторінку.'), 400);
+/* wc-ajax (є WC-сесія): перевірити Google-токен → повернути профіль + позначити сесію як Google */
+add_action('wc_ajax_shatailo_google_prefill', 'shatailo_google_prefill');
+function shatailo_google_prefill() {
+  if (!wp_verify_nonce(isset($_POST['nonce']) ? $_POST['nonce'] : '', 'shatailo_google_prefill')) {
+    wp_send_json_error(array('message' => 'Оновіть сторінку.'), 400);
   }
-  if (!shatailo_google_client_id()) wp_send_json_error(array('message' => 'Google-логін не налаштовано.'), 503);
-
-  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
-  if (shatailo_login_blocked($ip, 'glf')) wp_send_json_error(array('message' => 'Забагато спроб. Спробуйте за 15 хв.'), 429);
-
+  if (!shatailo_google_client_id()) wp_send_json_error(array('message' => 'Не налаштовано.'), 503);
   $access = isset($_POST['access_token']) ? (string) $_POST['access_token'] : '';
-  if (!$access) wp_send_json_error(array('message' => 'Немає токена Google.'), 400);
-
+  if (!$access) wp_send_json_error(array('message' => 'Немає токена.'), 400);
   $v = shatailo_google_verify($access, '');
-  if (is_wp_error($v)) { shatailo_login_fail($ip, 'glf'); wp_send_json_error(array('message' => $v->get_error_message()), 401); }
-  $email = $v['email']; $verified = $v['verified']; $info = $v['profile'];
-  if (!$email || !$verified) wp_send_json_error(array('message' => 'Google не підтвердив email.'), 401);
+  if (is_wp_error($v)) wp_send_json_error(array('message' => $v->get_error_message()), 401);
+  if (empty($v['email']) || empty($v['verified'])) wp_send_json_error(array('message' => 'Google не підтвердив email.'), 401);
+  $info  = $v['profile'];
+  $email = $v['email'];
+  if (WC()->session) WC()->session->set('shatailo_g_email', strtolower($email));
+  wp_send_json_success(array(
+    'email' => $email,
+    'first' => isset($info['given_name']) ? sanitize_text_field($info['given_name']) : '',
+    'last'  => isset($info['family_name']) ? sanitize_text_field($info['family_name']) : '',
+  ));
+}
 
-  $user = get_user_by('email', $email);
-  if (!$user) {
-    $uid = wp_insert_user(array(
-      'user_login'   => $email,
-      'user_email'   => $email,
-      'user_pass'    => wp_generate_password(24, true, true),
-      'first_name'   => isset($info['given_name']) ? sanitize_text_field($info['given_name']) : '',
-      'last_name'    => isset($info['family_name']) ? sanitize_text_field($info['family_name']) : '',
-      'display_name' => isset($info['name']) ? sanitize_text_field($info['name']) : $email,
-      'role'         => 'customer',
-    ));
-    if (is_wp_error($uid)) wp_send_json_error(array('message' => 'Не вдалося створити акаунт.'), 500);
-    update_user_meta($uid, 'billing_email', $email);
-    if (isset($info['given_name']))  update_user_meta($uid, 'billing_first_name', sanitize_text_field($info['given_name']));
-    if (isset($info['family_name'])) update_user_meta($uid, 'billing_last_name', sanitize_text_field($info['family_name']));
-    $user = get_user_by('id', $uid);
+/* позначити замовлення як Google, якщо email збігається з підтвердженим у сесії */
+add_action('woocommerce_checkout_create_order', function ($order, $data) {
+  if (!WC()->session) return;
+  $g = WC()->session->get('shatailo_g_email');
+  if ($g && strtolower($order->get_billing_email()) === $g) {
+    $order->update_meta_data('_shatailo_google', 1);
   }
+}, 10, 2);
 
-  delete_transient('shatailo_glf_' . md5($ip));
-  wp_set_current_user($user->ID);
-  wp_set_auth_cookie($user->ID, true);
-  do_action('wp_login', $user->user_login, $user);
-  wp_send_json_success(array('redirect' => function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : ''));
+/* акаунт створюємо ЛИШЕ після успішної оплати — з даних замовлення */
+add_action('woocommerce_payment_complete', 'shatailo_account_on_paid');
+add_action('woocommerce_order_status_processing', 'shatailo_account_on_paid');
+add_action('woocommerce_order_status_completed', 'shatailo_account_on_paid');
+function shatailo_account_on_paid($order_id) {
+  $order = wc_get_order($order_id);
+  if (!$order || $order->get_customer_id()) return; // вже привʼязано до акаунта
+  $email = $order->get_billing_email();
+  if (!$email || !function_exists('wc_create_new_customer')) return;
+
+  $existing = get_user_by('email', $email);
+  if ($existing) { $order->set_customer_id($existing->ID); $order->save(); return; }
+
+  $is_google = (bool) $order->get_meta('_shatailo_google');
+  // для Google-акаунта — без листа «встановіть пароль» (вхід через Google)
+  if ($is_google) add_filter('woocommerce_email_enabled_customer_new_account', '__return_false', 999);
+  $uid = wc_create_new_customer($email, '', '', array(
+    'first_name' => $order->get_billing_first_name(),
+    'last_name'  => $order->get_billing_last_name(),
+  ));
+  if ($is_google) remove_filter('woocommerce_email_enabled_customer_new_account', '__return_false', 999);
+
+  if (is_wp_error($uid)) return;
+  $order->set_customer_id($uid);
+  $order->save();
+  if ($is_google) update_user_meta($uid, '_shatailo_google', 1);
 }
