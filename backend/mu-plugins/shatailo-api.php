@@ -357,46 +357,32 @@ function shatailo_rename_billing_heading($tr, $text) {
   return $tr;
 }
 
-/* реєстрація (гість): 2 колонки — поля зліва, Google справа. Відкриваємо ліву колонку */
-add_action('woocommerce_before_checkout_billing_form', function () {
-  if (is_user_logged_in() || !shatailo_google_client_id()) return;
-  echo '<h4 class="shatailo-subhead">Дані для входу</h4><div class="shatailo-cols"><div class="shatailo-cols__fields">';
-}, 20);
-
-/* закриваємо ліву колонку + права колонка з Google + стилі */
-add_action('woocommerce_after_checkout_billing_form', function () {
-  if (is_user_logged_in() || !shatailo_google_client_id()) return;
-  $nonce = esc_attr(wp_create_nonce('shatailo_google_prefill'));
-  echo '</div><div class="shatailo-cols__side">';
-  echo <<<HTML
-<div class="shatailo-cg" data-nonce="{$nonce}">
-  <p class="shatailo-cg__lead">Заповніть дані одним кліком:</p>
-  <button type="button" class="shatailo-cg__btn" id="shatailoCgBtn"><span class="shatailo-cg__g">G</span>&nbsp;Продовжити з Google</button>
-  <p class="shatailo-cg__status" id="shatailoCgStatus"></p>
-</div>
-HTML;
-  echo '</div></div>';
+/* стилі розкладки реєстрації гостя (одна колонка, форма обмеженої ширини зліва) */
+add_action('wp_head', function () {
+  if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
   echo <<<CSS
 <style>
-body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 12px !important; }
-.shatailo-loginrow { color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; margin:0 0 30px; }
-.shatailo-loginrow .showlogin { color:#f2ff00 !important; text-decoration:underline; margin-left:6px; }
-.shatailo-loginrow .showlogin:hover { color:#f4f2ec !important; }
-.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:1rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 22px; padding-top:28px; border-top:1px solid rgba(255,255,255,.1); }
-.shatailo-cols { display:grid; grid-template-columns:1fr 1fr; gap:0 48px; align-items:start; margin:0 0 10px; }
-.shatailo-cols__fields { min-width:0; }
-.shatailo-cols__fields p.form-row { width:100% !important; float:none !important; clear:none !important; margin:0 0 18px !important; }
-.shatailo-cols__side { padding-top:0; }
-body.woocommerce-checkout #order_review_heading { margin-top:38px !important; }
-@media (max-width:768px){ .shatailo-cols { grid-template-columns:1fr; gap:26px; } }
-.shatailo-cg__lead { color:#f4f2ec; font-family:"Unbounded",sans-serif; font-size:.9rem; text-transform:uppercase; margin:0 0 14px; }
-.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s, box-shadow .25s; }
+body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 26px !important; }
+.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:.95rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 16px; }
+.shatailo-loginbox { border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
+.shatailo-loginbox p { margin:0; color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; }
+.shatailo-loginbox .showlogin { color:#f2ff00 !important; text-decoration:underline; }
+.shatailo-loginbox .showlogin:hover { color:#f4f2ec !important; }
+.shatailo-divider { display:flex; align-items:center; gap:16px; margin:30px 0; color:#8d8d86; font-size:.76rem; text-transform:uppercase; letter-spacing:.06em; }
+.shatailo-divider::before, .shatailo-divider::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
+.shatailo-cg { max-width:440px; }
+.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s,box-shadow .25s; }
 .shatailo-cg__btn:hover { background:#f2ff00 !important; color:#0a0a0a !important; box-shadow:0 0 32px rgba(242,255,0,.35); }
 .shatailo-cg__btn:hover .shatailo-cg__g { color:#0a0a0a !important; }
 .shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a !important; }
-.shatailo-cg__status { min-height:1.1em; margin:10px 0 0; font-size:.85rem; color:#f2ff00; }
+.shatailo-cg__status { min-height:1.1em; margin:8px 0 0; font-size:.85rem; color:#f2ff00; }
 .shatailo-cg__status.is-err { color:#ff5555; }
+.shatailo-or { display:flex; align-items:center; gap:14px; max-width:440px; margin:16px 0; color:#8d8d86; font-size:.76rem; }
+.shatailo-or::before, .shatailo-or::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
+body.woocommerce-checkout .woocommerce-billing-fields .form-row,
+body.woocommerce-checkout .woocommerce-account-fields .form-row { max-width:440px; width:100% !important; float:none !important; clear:none !important; margin:0 0 18px !important; }
 body.woocommerce-checkout form.woocommerce-form-login, body.woocommerce-checkout .woocommerce-form-login-toggle { display:none !important; }
+body.woocommerce-checkout #order_review_heading { margin-top:40px !important; }
 </style>
 CSS;
 });
@@ -408,10 +394,24 @@ add_action('wp', function () {
   // прибираємо інлайн-форму входу Woo повністю — вхід відбувається в нашій модалці
   remove_action('woocommerce_before_checkout_form', 'woocommerce_checkout_login_form', 10);
 });
-/* власний чистий рядок «Вже замовляли у нас?» (клік → наша модалка) */
+/* розкладка реєстрації гостя (одна колонка): «Вже замовляли?» + бокс + розділювач
+   + «Дані для входу» + кнопка Google + «або»; далі рендеряться поля Woo */
 add_action('woocommerce_before_checkout_billing_form', function () {
   if (is_user_logged_in()) return;
-  echo '<p class="shatailo-loginrow">Вже замовляли у нас? <a href="#" class="showlogin">Натисніть сюди, щоб увійти</a></p>';
+  echo '<h4 class="shatailo-subhead">Вже замовляли у нас?</h4>';
+  echo '<div class="shatailo-loginbox"><p>Якщо ви купували у нас раніше, будь ласка, <a href="#" class="showlogin">Натисніть сюди, щоб увійти</a></p></div>';
+  echo '<div class="shatailo-divider"><span>або заповніть вручну нижче</span></div>';
+  echo '<h4 class="shatailo-subhead">Дані для входу</h4>';
+  if (shatailo_google_client_id()) {
+    $nonce = esc_attr(wp_create_nonce('shatailo_google_prefill'));
+    echo <<<HTML
+<div class="shatailo-cg" data-nonce="{$nonce}">
+  <button type="button" class="shatailo-cg__btn" id="shatailoCgBtn"><span class="shatailo-cg__g">G</span>&nbsp;Реєстрація з Google</button>
+  <p class="shatailo-cg__status" id="shatailoCgStatus"></p>
+</div>
+<div class="shatailo-or"><span>або</span></div>
+HTML;
+  }
 }, 6);
 
 /* GIS + JS на checkout: (1) кнопка реєстрації підтягує поля; (2) модалка входу існуючого клієнта */
@@ -428,13 +428,6 @@ window.addEventListener("load", function () {
   var CID = {$cid};
   var hasGoogle = !!(window.google && google.accounts && google.accounts.oauth2);
   function el(id){ return document.getElementById(id); }
-
-  /* поле «пароль» (.woocommerce-account-fields) рендериться окремо — переносимо в ліву колонку */
-  (function(){
-    var acct = document.querySelector(".woocommerce-account-fields");
-    var left = document.querySelector(".shatailo-cols__fields");
-    if (acct && left) left.appendChild(acct);
-  })();
 
   /* (1) реєстрація: Google підтягує поля */
   (function(){
