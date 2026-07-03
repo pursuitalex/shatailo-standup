@@ -421,7 +421,7 @@ HTML;
 
 /* GIS + JS на checkout: (1) кнопка реєстрації підтягує поля; (2) модалка входу існуючого клієнта */
 add_action('wp_enqueue_scripts', function () {
-  if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
+  if (!function_exists('is_checkout') || !is_checkout()) return;
   if (!shatailo_google_client_id()) return;
   wp_enqueue_script('gsi-client', 'https://accounts.google.com/gsi/client', array(), null, true);
   $cid   = wp_json_encode(shatailo_google_client_id());
@@ -565,7 +565,7 @@ function shatailo_account_on_paid($order_id) {
    (дані підтягуються). Woo-інлайн-форму входу ховаємо (використовуємо нашу модалку).
    ============================================================ */
 add_action('wp_footer', function () {
-  if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
+  if (!function_exists('is_checkout') || !is_checkout()) return;
   $nonce = esc_attr(wp_create_nonce('shatailo_checkout_login'));
   $lost  = esc_url(function_exists('wc_lostpassword_url') ? wc_lostpassword_url() : wp_lostpassword_url());
   $google = shatailo_google_client_id()
@@ -683,8 +683,8 @@ add_action('woocommerce_before_checkout_billing_form', function () {
   if (!is_user_logged_in()) return;
   $u = wp_get_current_user();
   $name = $u->first_name ? $u->first_name : $u->display_name;
-  $logout = esc_url(wp_logout_url(function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : home_url('/checkout/')));
-  echo '<p class="shatailo-switch">Ви увійшли як <b>' . esc_html($name) . '</b> · <a href="' . $logout . '">Зайти під іншим акаунтом</a></p>';
+  // «Зайти під іншим акаунтом» → відкриває нашу модалку входу (без logout, щоб кошик не зникав)
+  echo '<p class="shatailo-switch">Ви увійшли як <b>' . esc_html($name) . '</b> · <a href="#" class="showlogin">Зайти під іншим акаунтом</a></p>';
   echo '<style>'
     . '.shatailo-switch { color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; margin:0 0 22px; }'
     . '.shatailo-switch b { color:#f4f2ec; }'
