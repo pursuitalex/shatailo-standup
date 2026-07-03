@@ -428,6 +428,7 @@ add_action('wp_enqueue_scripts', function () {
   $urlP  = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_google_prefill', home_url('/')));
   $urlPw = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_checkout_pwlogin', home_url('/')));
   $urlGl = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_checkout_googlelogin', home_url('/')));
+  $urlLp = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_lostpassword', home_url('/')));
   $js = <<<JS
 window.addEventListener("load", function () {
   var CID = {$cid};
@@ -458,7 +459,10 @@ window.addEventListener("load", function () {
   (function(){
     var modal = el("shatailoLogin"); if (!modal) return;
     var nonce = modal.getAttribute("data-nonce"), mst = el("shatailoLoginStatus");
-    function open(){ modal.classList.add("is-open"); document.body.style.overflow = "hidden"; }
+    var loginView = el("shatailoLoginView"), resetView = el("shatailoResetView");
+    function showLogin(){ if (loginView) loginView.hidden = false; if (resetView) resetView.hidden = true; }
+    function showReset(){ if (loginView) loginView.hidden = true; if (resetView) resetView.hidden = false; }
+    function open(){ showLogin(); modal.classList.add("is-open"); document.body.style.overflow = "hidden"; }
     function close(){ modal.classList.remove("is-open"); document.body.style.overflow = ""; }
     /* capture-фаза: спрацьовуємо раніше за WC-обробник (він робить return false на body) */
     document.addEventListener("click", function(e){
@@ -467,6 +471,19 @@ window.addEventListener("load", function () {
       if (e.target.closest("[data-login-close]")) { close(); }
     }, true);
     document.addEventListener("keydown", function(e){ if (e.key === "Escape") close(); });
+    var lostLink = el("shatailoLostLink"), resetBack = el("shatailoResetBack");
+    if (lostLink) lostLink.addEventListener("click", function(e){ e.preventDefault(); showReset(); });
+    if (resetBack) resetBack.addEventListener("click", function(e){ e.preventDefault(); showLogin(); });
+    var rform = el("shatailoResetForm"), rst = el("shatailoResetStatus");
+    if (rform) rform.addEventListener("submit", function(e){
+      e.preventDefault();
+      rst.textContent = "Надсилаємо…"; rst.className = "authmodal2__status";
+      var fd = new FormData(); fd.append("login", rform.login.value.trim()); fd.append("nonce", nonce);
+      fetch({$urlLp}, { method: "POST", body: fd, credentials: "same-origin" }).then(function(x){return x.json();}).then(function(j){
+        if (j && j.success) { rst.textContent = (j.data && j.data.message) || "Лист надіслано."; rst.className = "authmodal2__status"; }
+        else { rst.textContent = (j && j.data && j.data.message) || "Не вдалося."; rst.className = "authmodal2__status is-err"; }
+      }).catch(function(){ rst.textContent = "Помилка мережі."; rst.className = "authmodal2__status is-err"; });
+    });
     var form = el("shatailoLoginForm");
     if (form) form.addEventListener("submit", function(e){
       e.preventDefault();
@@ -576,18 +593,30 @@ add_action('wp_footer', function () {
   <div class="authmodal2__backdrop" data-login-close></div>
   <div class="authmodal2__box" role="dialog" aria-modal="true">
     <button class="authmodal2__close" data-login-close type="button" aria-label="Закрити">&times;</button>
-    <h3 class="authmodal2__title">Увійти</h3>
-    {$google}
-    <form class="authmodal2__form" id="shatailoLoginForm">
-      <label class="authmodal2__field"><span>Email</span><input type="email" name="email" required autocomplete="email"></label>
-      <label class="authmodal2__field"><span>Пароль</span><input type="password" name="password" required autocomplete="current-password"></label>
-      <div class="authmodal2__row">
-        <label class="authmodal2__remember"><input type="checkbox" name="remember"> Запамʼятати мене</label>
-        <a class="authmodal2__lost" href="{$lost}" target="_blank" rel="noopener">Забули пароль?</a>
-      </div>
-      <button type="submit" class="authmodal2__submit">Увійти</button>
-      <p class="authmodal2__status" id="shatailoLoginStatus"></p>
-    </form>
+    <div class="authmodal2__view" id="shatailoLoginView">
+      <h3 class="authmodal2__title">Увійти</h3>
+      {$google}
+      <form class="authmodal2__form" id="shatailoLoginForm">
+        <label class="authmodal2__field"><span>Email</span><input type="email" name="email" required autocomplete="email"></label>
+        <label class="authmodal2__field"><span>Пароль</span><input type="password" name="password" required autocomplete="current-password"></label>
+        <div class="authmodal2__row">
+          <label class="authmodal2__remember"><input type="checkbox" name="remember"> Запамʼятати мене</label>
+          <a class="authmodal2__lost" href="#" id="shatailoLostLink">Забули пароль?</a>
+        </div>
+        <button type="submit" class="authmodal2__submit">Увійти</button>
+        <p class="authmodal2__status" id="shatailoLoginStatus"></p>
+      </form>
+    </div>
+    <div class="authmodal2__view" id="shatailoResetView" hidden>
+      <a href="#" class="authmodal2__back" id="shatailoResetBack">← Повернутися</a>
+      <h3 class="authmodal2__title">Скидання пароля</h3>
+      <p class="authmodal2__note">Введіть email або логін — надішлемо посилання для створення нового пароля.</p>
+      <form class="authmodal2__form" id="shatailoResetForm">
+        <label class="authmodal2__field"><span>Email або логін</span><input type="text" name="login" required autocomplete="username"></label>
+        <button type="submit" class="authmodal2__submit">Скинути пароль</button>
+        <p class="authmodal2__status" id="shatailoResetStatus"></p>
+      </form>
+    </div>
   </div>
 </div>
 <style>
@@ -599,6 +628,9 @@ body.woocommerce-checkout form.woocommerce-form-login { display:none !important;
 .authmodal2__close { position:absolute; top:12px; right:16px; background:none !important; border:0 !important; box-shadow:none !important; color:#f2ff00; font-size:1.7rem; line-height:1; cursor:pointer; }
 .authmodal2__close:hover { background:none !important; color:#f4f2ec !important; }
 .authmodal2__title { font-family:"Unbounded",sans-serif; font-weight:800; font-size:1.5rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 22px; }
+.authmodal2__back { display:inline-block; color:#8d8d86 !important; font-family:"Unbounded",sans-serif; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; text-decoration:none !important; margin:0 0 18px; transition:color .2s; }
+.authmodal2__back:hover { color:#f2ff00 !important; }
+.authmodal2__note { color:#8d8d86; font-family:"Inter",sans-serif; font-size:.88rem; line-height:1.5; margin:0 0 20px; }
 .authmodal2__google { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s,box-shadow .25s; }
 .authmodal2__google:hover { background:#f2ff00 !important; color:#0a0a0a !important; box-shadow:0 0 32px rgba(242,255,0,.35); }
 .authmodal2__google:hover .authmodal2__g { color:#0a0a0a !important; }
@@ -667,6 +699,24 @@ function shatailo_checkout_googlelogin() {
   wp_set_auth_cookie($user->ID, true);
   do_action('wp_login', $user->user_login, $user);
   wp_send_json_success();
+}
+
+/* wc-ajax: скидання пароля (у нашій модалці) — надіслати лист із посиланням */
+add_action('wc_ajax_shatailo_lostpassword', 'shatailo_lostpassword');
+function shatailo_lostpassword() {
+  if (!wp_verify_nonce(isset($_POST['nonce']) ? $_POST['nonce'] : '', 'shatailo_checkout_login')) {
+    wp_send_json_error(array('message' => 'Оновіть сторінку.'), 400);
+  }
+  $login = isset($_POST['login']) ? trim(wp_unslash($_POST['login'])) : '';
+  if (!$login) wp_send_json_error(array('message' => 'Вкажіть email або логін.'), 400);
+  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
+  if (shatailo_login_blocked($ip, 'lp')) wp_send_json_error(array('message' => 'Забагато спроб. Спробуйте за 15 хв.'), 429);
+  $result = retrieve_password($login);
+  if (is_wp_error($result)) {
+    shatailo_login_fail($ip, 'lp');
+    wp_send_json_error(array('message' => wp_strip_all_tags($result->get_error_message())), 400);
+  }
+  wp_send_json_success(array('message' => 'Лист із посиланням для скидання надіслано на вашу пошту.'));
 }
 
 /* залогінений на checkout: ім'я/email лише для показу (readonly) + лінк «Зайти під іншим акаунтом» */
