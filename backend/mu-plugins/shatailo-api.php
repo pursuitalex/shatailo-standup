@@ -428,13 +428,14 @@ window.addEventListener("load", function () {
   (function(){
     var modal = el("shatailoLogin"); if (!modal) return;
     var nonce = modal.getAttribute("data-nonce"), mst = el("shatailoLoginStatus");
-    function open(e){ if (e) e.preventDefault(); modal.classList.add("is-open"); document.body.style.overflow = "hidden"; }
+    function open(){ modal.classList.add("is-open"); document.body.style.overflow = "hidden"; }
     function close(){ modal.classList.remove("is-open"); document.body.style.overflow = ""; }
+    /* capture-фаза: спрацьовуємо раніше за WC-обробник (він робить return false на body) */
     document.addEventListener("click", function(e){
-      var s = e.target.closest ? e.target.closest(".showlogin") : null;
-      if (s) { open(e); return; }
-      if (e.target.closest && e.target.closest("[data-login-close]")) { close(); }
-    });
+      if (!e.target || !e.target.closest) return;
+      if (e.target.closest(".showlogin")) { e.preventDefault(); e.stopPropagation(); open(); return; }
+      if (e.target.closest("[data-login-close]")) { close(); }
+    }, true);
     document.addEventListener("keydown", function(e){ if (e.key === "Escape") close(); });
     var form = el("shatailoLoginForm");
     if (form) form.addEventListener("submit", function(e){
