@@ -362,15 +362,23 @@ add_action('woocommerce_before_checkout_form', function () {
 <style>
 .shatailo-cg { margin: 0 0 30px; }
 .shatailo-cg__lead { color:#f4f2ec; font-family:"Unbounded",sans-serif; font-size:.9rem; text-transform:uppercase; margin:0 0 14px; }
-.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#f4f2ec; color:#0a0a0a; border:1px solid #f4f2ec; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:14px 26px; cursor:pointer; transition:background .25s, box-shadow .25s; }
-.shatailo-cg__btn:hover { background:#f2ff00; box-shadow:0 0 32px rgba(242,255,0,.35); }
-.shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#4285F4; }
+.shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; background:#f4f2ec; color:#0a0a0a; border:1px solid #f4f2ec; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; white-space:nowrap; transition:background .25s, border-color .25s, box-shadow .25s; }
+.shatailo-cg__btn:hover { background:#f2ff00; border-color:#f2ff00; box-shadow:0 0 32px rgba(242,255,0,.35); }
+.shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a; }
 .shatailo-cg__status { min-height:1.1em; margin:10px 0 0; font-size:.85rem; color:#f2ff00; }
 .shatailo-cg__status.is-err { color:#ff5555; }
 .shatailo-cg__or { display:flex; align-items:center; gap:14px; margin:22px 0 0; color:#8d8d86; font-size:.76rem; text-transform:uppercase; letter-spacing:.04em; }
 .shatailo-cg__or::before, .shatailo-cg__or::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
 </style>
 HTML;
+});
+
+/* перенести Woo-форму «Вже замовляли у нас?» на початок блоку «Платіжні дані»
+   (за замовчуванням вона над формою — логічніше згрупувати з платіжними даними) */
+add_action('wp', function () {
+  if (!function_exists('is_checkout') || !is_checkout()) return;
+  remove_action('woocommerce_before_checkout_form', 'woocommerce_checkout_login_form', 10);
+  add_action('woocommerce_before_checkout_billing_form', 'woocommerce_checkout_login_form', 5);
 });
 
 /* GIS + JS на checkout: Google → підтягнути поля (без входу) */
