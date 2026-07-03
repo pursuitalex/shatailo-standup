@@ -285,6 +285,43 @@ body.woocommerce-page .woocommerce-mini-cart__buttons .button.checkout {
 }
 /* кнопка закриття панелі */
 body.woocommerce-page .elementor-menu-cart__close-button { color: #f2ff00 !important; }
+
+/* ============================================================
+   Сторінка скидання пароля (my-account) — у стилі нашого попапу
+   ============================================================ */
+body.woocommerce-account form.woocommerce-ResetPassword {
+  max-width: 440px; margin: 6px auto 0; background: #0c0c0c;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 4px; padding: 32px 30px;
+}
+body.woocommerce-account form.woocommerce-ResetPassword > p:first-child {
+  color: #8d8d86 !important; font-family: "Inter", sans-serif; font-size: 0.9rem; line-height: 1.5; margin: 0 0 20px !important;
+}
+body.woocommerce-account form.woocommerce-ResetPassword .form-row {
+  width: 100% !important; float: none !important; clear: none !important; margin: 0 0 16px !important;
+}
+body.woocommerce-account form.woocommerce-ResetPassword label {
+  display: block; font-family: "Unbounded", sans-serif !important; font-size: 0.7rem;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #8d8d86 !important; margin: 0 0 7px;
+}
+body.woocommerce-account form.woocommerce-ResetPassword .password-input { display: block; position: relative; }
+body.woocommerce-account form.woocommerce-ResetPassword .show-password-input { color: #8d8d86; }
+body.woocommerce-account form.woocommerce-ResetPassword .show-password-input.display-password { color: #f2ff00; }
+body.woocommerce-account form.woocommerce-ResetPassword .button { width: 100% !important; margin-top: 4px; }
+/* індикатор складності пароля — у нашій палітрі (замість зеленого/червоного) */
+body.woocommerce-account .woocommerce-password-strength {
+  font-family: "Unbounded", sans-serif !important; font-size: 0.66rem !important; letter-spacing: 0.08em;
+  text-transform: uppercase; text-align: left !important; background: #141414 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important; border-radius: 2px !important;
+  padding: 9px 12px !important; margin: 8px 0 0 !important; color: #f4f2ec !important;
+}
+body.woocommerce-account .woocommerce-password-strength.short,
+body.woocommerce-account .woocommerce-password-strength.bad { color: #ff5555 !important; border-color: rgba(255, 85, 85, 0.4) !important; }
+body.woocommerce-account .woocommerce-password-strength.good { color: #f4f2ec !important; }
+body.woocommerce-account .woocommerce-password-strength.strong { color: #f2ff00 !important; border-color: rgba(242, 255, 0, 0.4) !important; }
+body.woocommerce-account .woocommerce-password-hint {
+  display: block; color: #8d8d86 !important; font-family: "Inter", sans-serif;
+  font-size: 0.8rem; line-height: 1.5; margin: 8px 0 0 !important;
+}
 CSS;
 
   wp_add_inline_style('shatailo-woo-skin', $css);
