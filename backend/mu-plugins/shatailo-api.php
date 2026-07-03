@@ -378,10 +378,16 @@ HTML;
   echo '</div></div>';
   echo <<<CSS
 <style>
-.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:1rem; text-transform:uppercase; color:#f4f2ec; margin:6px 0 18px; }
-.shatailo-cols { display:grid; grid-template-columns:1fr 1fr; gap:0 48px; align-items:start; }
+body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 12px !important; }
+.shatailo-loginrow { color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; margin:0 0 30px; }
+.shatailo-loginrow .showlogin { color:#f2ff00 !important; text-decoration:underline; margin-left:6px; }
+.shatailo-loginrow .showlogin:hover { color:#f4f2ec !important; }
+.shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:700; font-size:1rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 22px; padding-top:28px; border-top:1px solid rgba(255,255,255,.1); }
+.shatailo-cols { display:grid; grid-template-columns:1fr 1fr; gap:0 48px; align-items:start; margin:0 0 10px; }
 .shatailo-cols__fields { min-width:0; }
-.shatailo-cols__side { padding-top:2px; }
+.shatailo-cols__fields p.form-row { width:100% !important; float:none !important; clear:none !important; margin:0 0 18px !important; }
+.shatailo-cols__side { padding-top:0; }
+body.woocommerce-checkout #order_review_heading { margin-top:38px !important; }
 @media (max-width:768px){ .shatailo-cols { grid-template-columns:1fr; gap:26px; } }
 .shatailo-cg__lead { color:#f4f2ec; font-family:"Unbounded",sans-serif; font-size:.9rem; text-transform:uppercase; margin:0 0 14px; }
 .shatailo-cg__btn { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s, box-shadow .25s; }
@@ -390,11 +396,7 @@ HTML;
 .shatailo-cg__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a !important; }
 .shatailo-cg__status { min-height:1.1em; margin:10px 0 0; font-size:.85rem; color:#f2ff00; }
 .shatailo-cg__status.is-err { color:#ff5555; }
-body.woocommerce-checkout .woocommerce-form-login-toggle { margin:0 0 18px; }
-body.woocommerce-checkout .woocommerce-form-login-toggle .woocommerce-info { background:transparent !important; border:0 !important; border-top:0 !important; box-shadow:none !important; padding:0 !important; margin:0 !important; color:#8d8d86 !important; font-family:"Inter",sans-serif !important; font-size:.9rem; }
-body.woocommerce-checkout .woocommerce-form-login-toggle .woocommerce-info::before { display:none !important; }
-body.woocommerce-checkout .woocommerce-form-login-toggle .showlogin { color:#f2ff00 !important; background:transparent !important; border:0 !important; padding:0 !important; margin-left:6px; text-transform:none; text-decoration:underline; }
-body.woocommerce-checkout .woocommerce-form-login-toggle .showlogin:hover { color:#f4f2ec !important; }
+body.woocommerce-checkout form.woocommerce-form-login, body.woocommerce-checkout .woocommerce-form-login-toggle { display:none !important; }
 </style>
 CSS;
 });
@@ -403,9 +405,14 @@ CSS;
    (за замовчуванням вона над формою — логічніше згрупувати з платіжними даними) */
 add_action('wp', function () {
   if (!function_exists('is_checkout') || !is_checkout()) return;
+  // прибираємо інлайн-форму входу Woo повністю — вхід відбувається в нашій модалці
   remove_action('woocommerce_before_checkout_form', 'woocommerce_checkout_login_form', 10);
-  add_action('woocommerce_before_checkout_billing_form', 'woocommerce_checkout_login_form', 5);
 });
+/* власний чистий рядок «Вже замовляли у нас?» (клік → наша модалка) */
+add_action('woocommerce_before_checkout_billing_form', function () {
+  if (is_user_logged_in()) return;
+  echo '<p class="shatailo-loginrow">Вже замовляли у нас? <a href="#" class="showlogin">Натисніть сюди, щоб увійти</a></p>';
+}, 6);
 
 /* GIS + JS на checkout: (1) кнопка реєстрації підтягує поля; (2) модалка входу існуючого клієнта */
 add_action('wp_enqueue_scripts', function () {
