@@ -566,11 +566,13 @@ body.woocommerce-checkout form.woocommerce-form-login { display:none !important;
 .authmodal2.is-open { display:block; }
 .authmodal2__backdrop { position:absolute; inset:0; background:rgba(6,6,6,.72); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
 .authmodal2__box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(400px,calc(100% - 40px)); max-height:90vh; overflow:auto; background:#0c0c0c; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:34px 30px; }
-.authmodal2__close { position:absolute; top:12px; right:16px; background:none; border:0; color:#f2ff00; font-size:1.7rem; line-height:1; cursor:pointer; }
+.authmodal2__close { position:absolute; top:12px; right:16px; background:none !important; border:0 !important; box-shadow:none !important; color:#f2ff00; font-size:1.7rem; line-height:1; cursor:pointer; }
+.authmodal2__close:hover { background:none !important; color:#f4f2ec !important; }
 .authmodal2__title { font-family:"Unbounded",sans-serif; font-weight:800; font-size:1.5rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 22px; }
-.authmodal2__google { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec; color:#0a0a0a; border:1px solid #f4f2ec; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s,box-shadow .25s; }
-.authmodal2__google:hover { background:#f2ff00; box-shadow:0 0 32px rgba(242,255,0,.35); }
-.authmodal2__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a; }
+.authmodal2__google { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec !important; color:#0a0a0a !important; border:1px solid #f4f2ec !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s,box-shadow .25s; }
+.authmodal2__google:hover { background:#f2ff00 !important; color:#0a0a0a !important; box-shadow:0 0 32px rgba(242,255,0,.35); }
+.authmodal2__google:hover .authmodal2__g { color:#0a0a0a !important; }
+.authmodal2__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a !important; }
 .authmodal2__or { display:flex; align-items:center; gap:14px; margin:20px 0; color:#8d8d86; font-size:.8rem; }
 .authmodal2__or::before, .authmodal2__or::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
 .authmodal2__form { display:flex; flex-direction:column; gap:14px; }
@@ -582,8 +584,8 @@ body.woocommerce-checkout form.woocommerce-form-login { display:none !important;
 .authmodal2__remember { color:#8d8d86; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
 .authmodal2__lost { color:#f2ff00 !important; text-decoration:underline; }
 .authmodal2__lost:hover { color:#f4f2ec !important; }
-.authmodal2__submit { background:#f2ff00; color:#0a0a0a; border:1px solid #f2ff00; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:box-shadow .25s; }
-.authmodal2__submit:hover { box-shadow:0 0 32px rgba(242,255,0,.35); }
+.authmodal2__submit { background:#f2ff00 !important; color:#0a0a0a !important; border:1px solid #f2ff00 !important; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:box-shadow .25s; }
+.authmodal2__submit:hover { background:#f2ff00 !important; color:#0a0a0a !important; box-shadow:0 0 32px rgba(242,255,0,.35); }
 .authmodal2__status { min-height:1.1em; margin:2px 0 0; font-size:.85rem; color:#f2ff00; }
 .authmodal2__status.is-err { color:#ff5555; }
 </style>
@@ -636,3 +638,29 @@ function shatailo_checkout_googlelogin() {
   do_action('wp_login', $user->user_login, $user);
   wp_send_json_success();
 }
+
+/* залогінений на checkout: ім'я/email лише для показу (readonly) + лінк «Зайти під іншим акаунтом» */
+add_filter('woocommerce_checkout_fields', function ($fields) {
+  if (!is_user_logged_in()) return $fields;
+  foreach (array('billing_first_name', 'billing_last_name', 'billing_email') as $k) {
+    if (isset($fields['billing'][$k])) {
+      $fields['billing'][$k]['custom_attributes']['readonly'] = 'readonly';
+    }
+  }
+  return $fields;
+});
+add_action('woocommerce_before_checkout_billing_form', function () {
+  if (!is_user_logged_in()) return;
+  $u = wp_get_current_user();
+  $name = $u->first_name ? $u->first_name : $u->display_name;
+  $logout = esc_url(wp_logout_url(function_exists('wc_get_checkout_url') ? wc_get_checkout_url() : home_url('/checkout/')));
+  echo '<p class="shatailo-switch">Ви увійшли як <b>' . esc_html($name) . '</b> · <a href="' . $logout . '">Зайти під іншим акаунтом</a></p>';
+  echo '<style>'
+    . '.shatailo-switch { color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; margin:0 0 22px; }'
+    . '.shatailo-switch b { color:#f4f2ec; }'
+    . '.shatailo-switch a { color:#f2ff00 !important; text-decoration:underline; }'
+    . '.shatailo-switch a:hover { color:#f4f2ec !important; }'
+    . 'body.woocommerce-checkout .woocommerce-billing-fields input[readonly] { background:transparent !important; border:0 !important; border-bottom:1px solid rgba(255,255,255,.1) !important; border-radius:0 !important; color:#f4f2ec !important; padding-left:0 !important; cursor:default !important; box-shadow:none !important; }'
+    . 'body.woocommerce-checkout .woocommerce-billing-fields input[readonly]:focus { border-bottom-color:rgba(255,255,255,.1) !important; }'
+    . '</style>';
+}, 8);
