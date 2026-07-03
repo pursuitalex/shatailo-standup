@@ -389,48 +389,81 @@ add_action('wp', function () {
   add_action('woocommerce_before_checkout_billing_form', 'woocommerce_checkout_login_form', 5);
 });
 
-/* GIS + JS на checkout: Google → підтягнути поля (без входу) */
+/* GIS + JS на checkout: (1) кнопка реєстрації підтягує поля; (2) модалка входу існуючого клієнта */
 add_action('wp_enqueue_scripts', function () {
   if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
   if (!shatailo_google_client_id()) return;
   wp_enqueue_script('gsi-client', 'https://accounts.google.com/gsi/client', array(), null, true);
-  $cid = wp_json_encode(shatailo_google_client_id());
-  $url = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_google_prefill', home_url('/')));
+  $cid   = wp_json_encode(shatailo_google_client_id());
+  $urlP  = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_google_prefill', home_url('/')));
+  $urlPw = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_checkout_pwlogin', home_url('/')));
+  $urlGl = wp_json_encode(add_query_arg('wc-ajax', 'shatailo_checkout_googlelogin', home_url('/')));
   $js = <<<JS
 window.addEventListener("load", function () {
-  var box = document.querySelector(".shatailo-cg");
-  var btn = document.getElementById("shatailoCgBtn");
-  var st  = document.getElementById("shatailoCgStatus");
-  if (!box || !btn || !st) return;
-  if (!(window.google && google.accounts && google.accounts.oauth2)) return;
-  var nonce = box.getAttribute("data-nonce");
-  function fill(id, val) { var el = document.getElementById(id); if (el && val) { el.value = val; el.dispatchEvent(new Event("change", { bubbles: true })); } }
-  var tc = google.accounts.oauth2.initTokenClient({
-    client_id: {$cid}, scope: "openid email profile",
-    callback: function (r) {
+  var CID = {$cid};
+  var hasGoogle = !!(window.google && google.accounts && google.accounts.oauth2);
+  function el(id){ return document.getElementById(id); }
+
+  /* (1) реєстрація: Google підтягує поля */
+  (function(){
+    var box = document.querySelector(".shatailo-cg"), btn = el("shatailoCgBtn"), st = el("shatailoCgStatus");
+    if (!box || !btn || !st || !hasGoogle) return;
+    var nonce = box.getAttribute("data-nonce");
+    function fill(id, val){ var e = el(id); if (e && val) { e.value = val; e.dispatchEvent(new Event("change", { bubbles: true })); } }
+    var tc = google.accounts.oauth2.initTokenClient({ client_id: CID, scope: "openid email profile", callback: function (r) {
       if (!r || !r.access_token) { st.textContent = "Скасовано."; st.className = "shatailo-cg__status is-err"; return; }
       st.textContent = "Підтягуємо дані…"; st.className = "shatailo-cg__status";
+      var fd = new FormData(); fd.append("access_token", r.access_token); fd.append("nonce", nonce);
+      fetch({$urlP}, { method: "POST", body: fd, credentials: "same-origin" }).then(function(x){return x.json();}).then(function(j){
+        if (j && j.success && j.data && j.data.email) {
+          fill("billing_email", j.data.email); fill("billing_first_name", j.data.first); fill("billing_last_name", j.data.last);
+          st.textContent = "✓ Дані підтягнуто. Завершіть замовлення нижче."; st.className = "shatailo-cg__status";
+        } else { st.textContent = (j && j.data && j.data.message) || "Не вдалося."; st.className = "shatailo-cg__status is-err"; }
+      }).catch(function(){ st.textContent = "Помилка мережі."; st.className = "shatailo-cg__status is-err"; });
+    }});
+    btn.addEventListener("click", function(){ st.textContent = "Відкриваємо Google…"; st.className = "shatailo-cg__status"; tc.requestAccessToken(); });
+  })();
+
+  /* (2) модалка входу існуючого клієнта (клік «Натисніть сюди, щоб увійти») */
+  (function(){
+    var modal = el("shatailoLogin"); if (!modal) return;
+    var nonce = modal.getAttribute("data-nonce"), mst = el("shatailoLoginStatus");
+    function open(e){ if (e) e.preventDefault(); modal.classList.add("is-open"); document.body.style.overflow = "hidden"; }
+    function close(){ modal.classList.remove("is-open"); document.body.style.overflow = ""; }
+    document.addEventListener("click", function(e){
+      var s = e.target.closest ? e.target.closest(".showlogin") : null;
+      if (s) { open(e); return; }
+      if (e.target.closest && e.target.closest("[data-login-close]")) { close(); }
+    });
+    document.addEventListener("keydown", function(e){ if (e.key === "Escape") close(); });
+    var form = el("shatailoLoginForm");
+    if (form) form.addEventListener("submit", function(e){
+      e.preventDefault();
+      mst.textContent = "Входимо…"; mst.className = "authmodal2__status";
       var fd = new FormData();
-      fd.append("access_token", r.access_token);
+      fd.append("email", form.email.value.trim());
+      fd.append("password", form.password.value);
+      if (form.remember && form.remember.checked) fd.append("remember", "1");
       fd.append("nonce", nonce);
-      fetch({$url}, { method: "POST", body: fd, credentials: "same-origin" })
-        .then(function (x) { return x.json(); })
-        .then(function (j) {
-          if (j && j.success && j.data && j.data.email) {
-            fill("billing_email", j.data.email);
-            fill("billing_first_name", j.data.first);
-            fill("billing_last_name", j.data.last);
-            st.textContent = "✓ Дані підтягнуто. Завершіть замовлення нижче.";
-            st.className = "shatailo-cg__status";
-          } else {
-            st.textContent = (j && j.data && j.data.message) || "Не вдалося.";
-            st.className = "shatailo-cg__status is-err";
-          }
-        })
-        .catch(function () { st.textContent = "Помилка мережі. Спробуйте ще."; st.className = "shatailo-cg__status is-err"; });
-    }
-  });
-  btn.addEventListener("click", function () { st.textContent = "Відкриваємо Google…"; st.className = "shatailo-cg__status"; tc.requestAccessToken(); });
+      fetch({$urlPw}, { method: "POST", body: fd, credentials: "same-origin" }).then(function(x){return x.json();}).then(function(j){
+        if (j && j.success) { window.location.reload(); }
+        else { mst.textContent = (j && j.data && j.data.message) || "Не вдалося увійти."; mst.className = "authmodal2__status is-err"; }
+      }).catch(function(){ mst.textContent = "Помилка мережі."; mst.className = "authmodal2__status is-err"; });
+    });
+    var gbtn = el("shatailoLoginGoogle");
+    if (gbtn && hasGoogle) {
+      var tcl = google.accounts.oauth2.initTokenClient({ client_id: CID, scope: "openid email profile", callback: function(r){
+        if (!r || !r.access_token) { mst.textContent = "Скасовано."; mst.className = "authmodal2__status is-err"; return; }
+        mst.textContent = "Входимо через Google…"; mst.className = "authmodal2__status";
+        var fd = new FormData(); fd.append("access_token", r.access_token); fd.append("nonce", nonce);
+        fetch({$urlGl}, { method: "POST", body: fd, credentials: "same-origin" }).then(function(x){return x.json();}).then(function(j){
+          if (j && j.success) { window.location.reload(); }
+          else { mst.textContent = (j && j.data && j.data.message) || "Не вдалося."; mst.className = "authmodal2__status is-err"; }
+        }).catch(function(){ mst.textContent = "Помилка мережі."; mst.className = "authmodal2__status is-err"; });
+      }});
+      gbtn.addEventListener("click", function(){ mst.textContent = "Відкриваємо Google…"; mst.className = "authmodal2__status"; tcl.requestAccessToken(); });
+    } else if (gbtn) { gbtn.style.display = "none"; }
+  })();
 });
 JS;
   wp_add_inline_script('gsi-client', $js);
@@ -493,4 +526,112 @@ function shatailo_account_on_paid($order_id) {
   $order->set_customer_id($uid);
   $order->save();
   if ($is_google) update_user_meta($uid, '_shatailo_google', 1);
+}
+
+/* ============================================================
+   Модалка входу існуючого клієнта на checkout (клік «Натисніть сюди, щоб увійти»).
+   Стиль як у сайт-модалці. Вхід email+пароль або Google → WP-логін → reload
+   (дані підтягуються). Woo-інлайн-форму входу ховаємо (використовуємо нашу модалку).
+   ============================================================ */
+add_action('wp_footer', function () {
+  if (!function_exists('is_checkout') || !is_checkout() || is_user_logged_in()) return;
+  $nonce = esc_attr(wp_create_nonce('shatailo_checkout_login'));
+  $lost  = esc_url(function_exists('wc_lostpassword_url') ? wc_lostpassword_url() : wp_lostpassword_url());
+  $google = shatailo_google_client_id()
+    ? '<button type="button" class="authmodal2__google" id="shatailoLoginGoogle"><span class="authmodal2__g">G</span>&nbsp;Продовжити з Google</button><div class="authmodal2__or"><span>або</span></div>'
+    : '';
+  echo <<<HTML
+<div class="authmodal2" id="shatailoLogin" data-nonce="{$nonce}" aria-hidden="true">
+  <div class="authmodal2__backdrop" data-login-close></div>
+  <div class="authmodal2__box" role="dialog" aria-modal="true">
+    <button class="authmodal2__close" data-login-close type="button" aria-label="Закрити">&times;</button>
+    <h3 class="authmodal2__title">Увійти</h3>
+    {$google}
+    <form class="authmodal2__form" id="shatailoLoginForm">
+      <label class="authmodal2__field"><span>Email</span><input type="email" name="email" required autocomplete="email"></label>
+      <label class="authmodal2__field"><span>Пароль</span><input type="password" name="password" required autocomplete="current-password"></label>
+      <div class="authmodal2__row">
+        <label class="authmodal2__remember"><input type="checkbox" name="remember"> Запамʼятати мене</label>
+        <a class="authmodal2__lost" href="{$lost}" target="_blank" rel="noopener">Забули пароль?</a>
+      </div>
+      <button type="submit" class="authmodal2__submit">Увійти</button>
+      <p class="authmodal2__status" id="shatailoLoginStatus"></p>
+    </form>
+  </div>
+</div>
+<style>
+body.woocommerce-checkout form.woocommerce-form-login { display:none !important; }
+.authmodal2 { position:fixed; inset:0; z-index:99999; display:none; }
+.authmodal2.is-open { display:block; }
+.authmodal2__backdrop { position:absolute; inset:0; background:rgba(6,6,6,.72); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+.authmodal2__box { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:min(400px,calc(100% - 40px)); max-height:90vh; overflow:auto; background:#0c0c0c; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:34px 30px; }
+.authmodal2__close { position:absolute; top:12px; right:16px; background:none; border:0; color:#f2ff00; font-size:1.7rem; line-height:1; cursor:pointer; }
+.authmodal2__title { font-family:"Unbounded",sans-serif; font-weight:800; font-size:1.5rem; text-transform:uppercase; color:#f4f2ec; margin:0 0 22px; }
+.authmodal2__google { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; background:#f4f2ec; color:#0a0a0a; border:1px solid #f4f2ec; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:background .25s,box-shadow .25s; }
+.authmodal2__google:hover { background:#f2ff00; box-shadow:0 0 32px rgba(242,255,0,.35); }
+.authmodal2__g { font-family:"Unbounded",sans-serif; font-weight:800; color:#0a0a0a; }
+.authmodal2__or { display:flex; align-items:center; gap:14px; margin:20px 0; color:#8d8d86; font-size:.8rem; }
+.authmodal2__or::before, .authmodal2__or::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
+.authmodal2__form { display:flex; flex-direction:column; gap:14px; }
+.authmodal2__field { display:flex; flex-direction:column; gap:7px; }
+.authmodal2__field > span { font-family:"Unbounded",sans-serif; font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:#8d8d86; }
+.authmodal2__field input { font-family:"Inter",sans-serif; font-size:.95rem; color:#f4f2ec; background:#060606; border:1px solid rgba(255,255,255,.14); border-radius:3px; padding:13px 15px; width:100%; }
+.authmodal2__field input:focus { border-color:#f2ff00; outline:none; }
+.authmodal2__row { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:.82rem; }
+.authmodal2__remember { color:#8d8d86; display:inline-flex; align-items:center; gap:8px; cursor:pointer; }
+.authmodal2__lost { color:#f2ff00 !important; text-decoration:underline; }
+.authmodal2__lost:hover { color:#f4f2ec !important; }
+.authmodal2__submit { background:#f2ff00; color:#0a0a0a; border:1px solid #f2ff00; border-radius:2px; font-family:"Unbounded",sans-serif; font-weight:600; font-size:.82rem; letter-spacing:.06em; text-transform:uppercase; padding:16px 28px; cursor:pointer; transition:box-shadow .25s; }
+.authmodal2__submit:hover { box-shadow:0 0 32px rgba(242,255,0,.35); }
+.authmodal2__status { min-height:1.1em; margin:2px 0 0; font-size:.85rem; color:#f2ff00; }
+.authmodal2__status.is-err { color:#ff5555; }
+</style>
+HTML;
+});
+
+/* wc-ajax: вхід існуючого email+пароль (модалка checkout) → WP-логін */
+add_action('wc_ajax_shatailo_checkout_pwlogin', 'shatailo_checkout_pwlogin');
+function shatailo_checkout_pwlogin() {
+  if (!wp_verify_nonce(isset($_POST['nonce']) ? $_POST['nonce'] : '', 'shatailo_checkout_login')) {
+    wp_send_json_error(array('message' => 'Оновіть сторінку.'), 400);
+  }
+  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
+  if (shatailo_login_blocked($ip)) wp_send_json_error(array('message' => 'Забагато спроб. Спробуйте за 15 хв.'), 429);
+  $email = sanitize_email(isset($_POST['email']) ? $_POST['email'] : '');
+  $pass  = isset($_POST['password']) ? (string) $_POST['password'] : '';
+  $remember = !empty($_POST['remember']);
+  if (!$email || !$pass) wp_send_json_error(array('message' => 'Вкажіть email і пароль.'), 400);
+  $user = get_user_by('email', $email);
+  if (!$user || !wp_check_password($pass, $user->user_pass, $user->ID)) {
+    shatailo_login_fail($ip);
+    wp_send_json_error(array('message' => 'Невірний email або пароль.'), 401);
+  }
+  delete_transient('shatailo_lf_' . md5($ip));
+  wp_set_current_user($user->ID);
+  wp_set_auth_cookie($user->ID, $remember);
+  do_action('wp_login', $user->user_login, $user);
+  wp_send_json_success();
+}
+
+/* wc-ajax: вхід існуючого через Google (модалка checkout) → WP-логін, БЕЗ створення */
+add_action('wc_ajax_shatailo_checkout_googlelogin', 'shatailo_checkout_googlelogin');
+function shatailo_checkout_googlelogin() {
+  if (!wp_verify_nonce(isset($_POST['nonce']) ? $_POST['nonce'] : '', 'shatailo_checkout_login')) {
+    wp_send_json_error(array('message' => 'Оновіть сторінку.'), 400);
+  }
+  if (!shatailo_google_client_id()) wp_send_json_error(array('message' => 'Не налаштовано.'), 503);
+  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
+  if (shatailo_login_blocked($ip, 'glf')) wp_send_json_error(array('message' => 'Забагато спроб. Спробуйте за 15 хв.'), 429);
+  $access = isset($_POST['access_token']) ? (string) $_POST['access_token'] : '';
+  if (!$access) wp_send_json_error(array('message' => 'Немає токена Google.'), 400);
+  $v = shatailo_google_verify($access, '');
+  if (is_wp_error($v)) { shatailo_login_fail($ip, 'glf'); wp_send_json_error(array('message' => $v->get_error_message()), 401); }
+  if (empty($v['email']) || empty($v['verified'])) wp_send_json_error(array('message' => 'Google не підтвердив email.'), 401);
+  $user = get_user_by('email', $v['email']);
+  if (!$user) wp_send_json_error(array('message' => 'Акаунт із цим email не знайдено. Зареєструйтесь нижче.'), 404);
+  delete_transient('shatailo_glf_' . md5($ip));
+  wp_set_current_user($user->ID);
+  wp_set_auth_cookie($user->ID, true);
+  do_action('wp_login', $user->user_login, $user);
+  wp_send_json_success();
 }
