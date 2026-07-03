@@ -837,7 +837,6 @@
       "</div>" +
       '<label class="auth-field"><span>Відображуване ім’я</span><input type="text" value="' + esc(u.displayName || "") + '" disabled></label>' +
       '<label class="auth-field"><span>E-mail адреса</span><input type="email" value="' + esc(u.email || "") + '" disabled></label>' +
-      '<p class="acc-hint">Щоб змінити дані чи пароль — <a href="' + WOO_BASE + '/my-account/edit-account/" target="_blank" rel="noopener">керуйте акаунтом на shatailo.com</a>.</p>' +
       "</div>";
   }
   function accProfileMock() {
