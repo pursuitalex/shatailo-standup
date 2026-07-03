@@ -725,7 +725,7 @@ add_filter('option_woocommerce_email_body_background_color', function () { retur
 add_filter('option_woocommerce_email_text_color', function () { return '#f4f2ec'; });             // текст
 /* футер замість «Built with WooCommerce» */
 add_filter('woocommerce_email_footer_text', function () {
-  return 'Єгор Шатайло — стендап · сольники<br><a style="color:#f2ff00;" href="https://new.shatailo.com/">new.shatailo.com</a>';
+  return 'Єгор Шатайло — стендап · сольники<br><a style="color:#f2ff00;" href="https://shatailo.com/">shatailo.com</a>';
 });
 
 /* wc-ajax: скидання пароля (у нашій модалці) — надіслати лист із посиланням */
