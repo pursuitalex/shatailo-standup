@@ -35,7 +35,7 @@
   /* ---- Headless-кабінет через власний WP API (mu-plugin shatailo-api) ---- */
   var WP_API = WOO_BASE + "/wp-json/shatailo/v1";
   var TOKEN_KEY = "shatailo_token";
-  var token = HYBRID ? (localStorage.getItem(TOKEN_KEY) || "") : "";
+  var token = HYBRID ? (localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "") : "";
   var meData = null; // { user, orders, library } з /me
 
   /* ---- Google-логін (GIS). Вставити OAuth Client ID (…apps.googleusercontent.com).
@@ -56,6 +56,20 @@
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ access_token: accessToken })
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+  function apiLostPassword(login) {
+    return fetch(WP_API + "/lost-password", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login: login })
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); });
+  }
+  /* «запамʼятати мене»: remember → localStorage (постійно), інакше → sessionStorage (сесія) */
+  function saveToken(t, remember) {
+    token = t;
+    try {
+      localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY);
+      (remember ? localStorage : sessionStorage).setItem(TOKEN_KEY, t);
+    } catch (e) {}
   }
 
   /* ---- Google Identity Services: підвантажуємо скрипт один раз ---- */
@@ -108,8 +122,7 @@
     if (statusEl) { statusEl.textContent = "Входимо через Google…"; statusEl.className = "auth-status"; }
     apiGoogleLogin(resp.access_token).then(function (res) {
       if (res.ok && res.data && res.data.token) {
-        token = res.data.token; meData = null;
-        try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {}
+        meData = null; saveToken(res.data.token, true);
         window.location.assign("/account");
       } else {
         var msg = (res.data && res.data.message) || "Не вдалося увійти через Google.";
@@ -278,7 +291,7 @@
     if (u && u.email && u.email.toLowerCase() === DEMO_EMAIL) seedDemoOrders();
   }
   function logout() {
-    if (HYBRID) { token = ""; meData = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+    if (HYBRID) { token = ""; meData = null; try { localStorage.removeItem(TOKEN_KEY); sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
     else { user = null; saveUser(); }
   }
 
@@ -401,16 +414,32 @@
   /* ---------- модалка авторизації / акаунта ---------- */
   function authViewLogin() {
     return '' +
-      '<h3 class="authmodal__title">Увійти</h3>' +
-      '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
-        '<span class="auth-google__g">G</span> Продовжити з Google</button>' +
-      '<div class="auth-or"><span>або</span></div>' +
-      '<form class="auth-form" data-auth-form>' +
-        '<label class="auth-field"><span>Email</span><input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>' +
-        '<label class="auth-field"><span>Пароль</span><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></label>' +
-        '<button class="btn btn--solid auth-submit" type="submit" data-hover>Увійти</button>' +
-        '<p class="auth-status" data-auth-status></p>' +
-      '</form>';
+      '<div data-auth-loginview>' +
+        '<h3 class="authmodal__title">Увійти</h3>' +
+        '<button class="btn btn--white auth-google" data-google type="button" data-hover>' +
+          '<span class="auth-google__g">G</span> Продовжити з Google</button>' +
+        '<div class="auth-or"><span>або</span></div>' +
+        '<form class="auth-form" data-auth-form>' +
+          '<label class="auth-field"><span>Email</span><input type="email" name="email" required placeholder="you@example.com" autocomplete="email"></label>' +
+          '<label class="auth-field"><span>Пароль</span><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></label>' +
+          '<div class="auth-row">' +
+            '<label class="auth-remember"><input type="checkbox" name="remember"> Запам\'ятати мене</label>' +
+            '<a class="auth-lost" href="#" data-auth-lost data-hover>Забули пароль?</a>' +
+          '</div>' +
+          '<button class="btn btn--solid auth-submit" type="submit" data-hover>Увійти</button>' +
+          '<p class="auth-status" data-auth-status></p>' +
+        '</form>' +
+      '</div>' +
+      '<div data-auth-resetview hidden>' +
+        '<a class="auth-back" href="#" data-auth-back data-hover>← Повернутися</a>' +
+        '<h3 class="authmodal__title">Скидання пароля</h3>' +
+        '<p class="auth-note">Введіть email — надішлемо посилання для створення нового пароля.</p>' +
+        '<form class="auth-form" data-auth-reset-form>' +
+          '<label class="auth-field"><span>Email</span><input type="email" name="login" required placeholder="you@example.com" autocomplete="email"></label>' +
+          '<button class="btn btn--solid auth-submit" type="submit" data-hover>Скинути пароль</button>' +
+          '<p class="auth-status" data-auth-reset-status></p>' +
+        '</form>' +
+      '</div>';
   }
   function authViewAccount() {
     var u = getUser() || {};
@@ -561,6 +590,14 @@
     var acct = closest("[data-account]");
     if (acct) { e.preventDefault(); if (isLoggedIn()) window.location.assign("/account"); else openAuth(); return; }
     if (closest("[data-auth-close]")) { closeAuth(); return; }
+    if (closest("[data-auth-lost]")) { e.preventDefault();
+      var _lv = document.querySelector("#authModal [data-auth-loginview]");
+      var _rv = document.querySelector("#authModal [data-auth-resetview]");
+      if (_lv) _lv.hidden = true; if (_rv) _rv.hidden = false; return; }
+    if (closest("[data-auth-back]")) { e.preventDefault();
+      var _lv2 = document.querySelector("#authModal [data-auth-loginview]");
+      var _rv2 = document.querySelector("#authModal [data-auth-resetview]");
+      if (_lv2) _lv2.hidden = false; if (_rv2) _rv2.hidden = true; return; }
 
     var add = closest("[data-add-to-cart]");
     if (add) { e.preventDefault();
@@ -601,6 +638,7 @@
         return;
       }
       var pass = form.password.value;
+      var remember = form.remember && form.remember.checked;
       var statusEl = document.querySelector("#authModal [data-auth-status]");
       var sbtn = form.querySelector("[type=submit]");
       if (statusEl) { statusEl.textContent = "Входимо…"; statusEl.className = "auth-status"; }
@@ -608,8 +646,7 @@
       apiLogin(email, pass).then(function (res) {
         if (sbtn) sbtn.disabled = false;
         if (res.ok && res.data && res.data.token) {
-          token = res.data.token; meData = null;
-          try { localStorage.setItem(TOKEN_KEY, token); } catch (e2) {}
+          meData = null; saveToken(res.data.token, remember);
           window.location.assign("/account");
         } else {
           var msg = (res.data && res.data.message) || "Не вдалося увійти.";
@@ -618,6 +655,24 @@
       }).catch(function () {
         if (sbtn) sbtn.disabled = false;
         if (statusEl) { statusEl.textContent = "Помилка мережі. Спробуйте ще."; statusEl.className = "auth-status is-err"; }
+      });
+      return;
+    }
+    if (form.matches("[data-auth-reset-form]")) {
+      e.preventDefault();
+      var rlogin = form.login.value.trim();
+      var rstatus = document.querySelector("#authModal [data-auth-reset-status]");
+      var rbtn = form.querySelector("[type=submit]");
+      if (!HYBRID) { if (rstatus) { rstatus.textContent = "У демо недоступно."; rstatus.className = "auth-status"; } return; }
+      if (rstatus) { rstatus.textContent = "Надсилаємо…"; rstatus.className = "auth-status"; }
+      if (rbtn) rbtn.disabled = true;
+      apiLostPassword(rlogin).then(function (res) {
+        if (rbtn) rbtn.disabled = false;
+        if (res.ok) { if (rstatus) { rstatus.textContent = (res.data && res.data.message) || "Лист надіслано."; rstatus.className = "auth-status"; } }
+        else { if (rstatus) { rstatus.textContent = (res.data && res.data.message) || "Не вдалося."; rstatus.className = "auth-status is-err"; } }
+      }).catch(function () {
+        if (rbtn) rbtn.disabled = false;
+        if (rstatus) { rstatus.textContent = "Помилка мережі. Спробуйте ще."; rstatus.className = "auth-status is-err"; }
       });
       return;
     }

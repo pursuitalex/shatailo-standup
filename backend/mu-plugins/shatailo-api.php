@@ -193,6 +193,9 @@ add_action('rest_api_init', function () {
   register_rest_route('shatailo/v1', '/google-login', array(
     'methods' => 'POST', 'callback' => 'shatailo_route_google_login', 'permission_callback' => '__return_true',
   ));
+  register_rest_route('shatailo/v1', '/lost-password', array(
+    'methods' => 'POST', 'callback' => 'shatailo_route_lostpassword', 'permission_callback' => '__return_true',
+  ));
 });
 
 function shatailo_route_login($req) {
@@ -717,6 +720,20 @@ function shatailo_lostpassword() {
     wp_send_json_error(array('message' => wp_strip_all_tags($result->get_error_message())), 400);
   }
   wp_send_json_success(array('message' => 'Лист із посиланням для скидання надіслано на вашу пошту.'));
+}
+
+/* REST /lost-password — для сайт-модалки new.shatailo.com */
+function shatailo_route_lostpassword($req) {
+  $login = trim((string) $req->get_param('login'));
+  if (!$login) return new WP_Error('bad_request', 'Вкажіть email.', array('status' => 400));
+  $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'x';
+  if (shatailo_login_blocked($ip, 'lp')) return new WP_Error('too_many', 'Забагато спроб. Спробуйте за 15 хв.', array('status' => 429));
+  $result = retrieve_password($login);
+  if (is_wp_error($result)) {
+    shatailo_login_fail($ip, 'lp');
+    return new WP_Error('reset_failed', wp_strip_all_tags($result->get_error_message()), array('status' => 400));
+  }
+  return array('message' => 'Лист із посиланням для скидання надіслано на вашу пошту.');
 }
 
 /* залогінений на checkout: ім'я/email лише для показу (readonly) + лінк «Зайти під іншим акаунтом» */
