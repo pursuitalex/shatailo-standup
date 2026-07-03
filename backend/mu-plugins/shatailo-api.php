@@ -364,9 +364,10 @@ add_action('wp_head', function () {
 <style>
 body.woocommerce-checkout .woocommerce-billing-fields > h3 { margin:0 0 26px !important; }
 .shatailo-subhead { font-family:"Unbounded",sans-serif; font-weight:400; font-size:.82rem; letter-spacing:.08em; text-transform:uppercase; color:#f4f2ec; margin:0 0 16px; }
-.shatailo-loginbox { display:inline-block; width:fit-content; max-width:100%; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
-.shatailo-loginbox p { margin:0; color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; }
-.shatailo-loginbox .showlogin { color:#f2ff00 !important; text-decoration:underline; }
+.shatailo-loginbox { display:inline-block; max-width:100%; border:1px solid rgba(255,255,255,.12); border-radius:4px; padding:18px 22px; }
+.shatailo-loginbox p { margin:0; color:#8d8d86; font-family:"Inter",sans-serif; font-size:.9rem; white-space:nowrap; }
+.shatailo-loginbox .showlogin { color:#f2ff00 !important; text-decoration:underline; white-space:nowrap; }
+@media (max-width:600px){ .shatailo-loginbox { display:block; } .shatailo-loginbox p { white-space:normal; } }
 .shatailo-loginbox .showlogin:hover { color:#f4f2ec !important; }
 .shatailo-divider { display:flex; align-items:center; gap:16px; margin:30px 0; color:#8d8d86; font-size:.76rem; text-transform:uppercase; letter-spacing:.06em; }
 .shatailo-divider::before, .shatailo-divider::after { content:""; flex:1; height:1px; background:rgba(255,255,255,.12); }
